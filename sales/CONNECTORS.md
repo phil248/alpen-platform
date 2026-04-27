@@ -10,13 +10,13 @@ Plugins are **tool-agnostic** — they describe workflows in terms of categories
 
 | Category | Placeholder | Included servers | Other options |
 |----------|-------------|-----------------|---------------|
-| Calendar | `~~calendar` | Google Calendar, Microsoft 365 | — |
-| Chat | `~~chat` | Slack | Microsoft Teams |
+| Calendar | `Google Calendar` | Google Calendar, Microsoft 365 | — |
+| Chat | `Telegram` | Slack | Microsoft Teams |
 | Competitive intelligence | `~~competitive intelligence` | Similarweb | Crayon, Klue |
 | CRM | `~~CRM` | HubSpot, Close | Salesforce, Pipedrive, Copper |
-| Data enrichment | `~~data enrichment` | Clay, ZoomInfo, Apollo | Clearbit, Lusha |
-| Email | `~~email` | Gmail, Microsoft 365 | — |
-| Knowledge base | `~~knowledge base` | Notion | Confluence, Guru |
-| Meeting transcription | `~~conversation intelligence` | Fireflies | Gong, Chorus, Otter.ai |
-| Project tracker | `~~project tracker` | Atlassian (Jira/Confluence) | Linear, Asana |
+| Data enrichment | `SQLite + sqlite-vec enrichment` | Clay, ZoomInfo, Apollo | Clearbit, Lusha |
+| Email | `Gmail` | Gmail, Microsoft 365 | — |
+| Knowledge base | `Obsidian + sqlite-vec RAG base` | Notion | Confluence, Guru |
+| Meeting transcription | `Plaud intelligence` | Fireflies | Gong, Chorus, Otter.ai |
+| Project tracker | `Markdown + GitHub Issues tracker` | Atlassian (Jira/Confluence) | Linear, Asana |
 | Sales engagement | `~~sales engagement` | Outreach | Salesloft, Apollo |

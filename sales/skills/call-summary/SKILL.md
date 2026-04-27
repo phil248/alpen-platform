@@ -155,7 +155,7 @@ Here's what we discussed:
 - Update next steps field
 
 **Email connected:**
-- I'll offer to create a draft in ~~email
+- I'll offer to create a draft in Gmail
 - Or send directly if you approve
 
 ---
