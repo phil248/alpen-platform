@@ -1,7 +1,7 @@
 {
-  "name": "knowledge-work-plugins",
+  "name": "alpen-platform",
   "owner": {
-    "name": "Anthropic"
+    "name": "Alpen Tech"
   },
   "plugins": [
     {
