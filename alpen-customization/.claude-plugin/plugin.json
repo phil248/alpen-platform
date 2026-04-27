@@ -1,0 +1,8 @@
+{
+  "name": "alpen-customization",
+  "version": "0.1.0",
+  "description": "Alpen Platform plugin customization. Forks anthropics/knowledge-work-plugins/cowork-plugin-management/cowork-plugin-customizer to work in plain Claude Code (no Cowork desktop required) and pre-fills placeholder values from a tenant config (tenants/<tenant-id>/placeholders.yaml).",
+  "author": {
+    "name": "Alpen Tech"
+  }
+}

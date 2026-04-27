@@ -319,6 +319,14 @@
         "url": "https://github.com/figma/mcp-server-guide.git"
       },
       "homepage": "https://github.com/figma/mcp-server-guide"
+    },
+    {
+      "name": "alpen-customization",
+      "source": "./alpen-customization",
+      "description": "Alpen Platform plugin customization. Forked customizer that works in plain Claude Code and pre-fills placeholder values from tenants/<id>/placeholders.yaml.",
+      "author": {
+        "name": "Alpen Tech"
+      }
     }
   ]
 }

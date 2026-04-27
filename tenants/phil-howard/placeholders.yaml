@@ -1,0 +1,200 @@
+# Alpen Platform — Phil Howard tenant placeholder pack
+# Path: tenants/phil-howard/placeholders.yaml
+#
+# Pre-fills the 46 unique ~~ placeholders in our forked anthropics/knowledge-work-plugins
+# based on Phil's actual stack today (HFO + CCG + Alpen Tech).
+#
+# Consumed by alpen-plugin-customizer SKILL (alpen-customization/skills/).
+# Customizer greps `~~<name>` across the plugin being customized; if the name
+# matches a key in `upstream:` or `alpen_extensions:`, the value substitutes.
+# Unmatched placeholders are left in place (customizer prompts user, or skips).
+
+schema_version: "0.1"
+tenant: phil-howard
+last_updated: 2026-04-27
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPSTREAM placeholders (defined by anthropics/knowledge-work-plugins)
+# Use short canonical tool names — these substitute into prose.
+# Empty value = "not in this stack today; leave ~~ for customizer to prompt."
+# ─────────────────────────────────────────────────────────────────────────────
+upstream:
+  # Communication
+  email:          Gmail
+  calendar:       Google Calendar
+  chat:           Telegram               # not Slack — Phil's stack uses Telegram for principal-DM
+  meeting:        Plaud + Google Calendar
+  conversation:   Plaud
+  office:         Google Workspace
+
+  # Productivity
+  task:           Google Tasks
+  Task:           Google Tasks            # capital-T variant
+  notebook:       Obsidian
+  knowledge:      Obsidian + sqlite-vec RAG
+  user:           Phil Howard
+
+  # Engineering
+  source:         GitHub
+  CI:             GitHub Actions
+  cloud:          Local macOS + Google Drive + Firebase
+  data:           SQLite + sqlite-vec
+  monitoring:     ""                      # Langfuse planned, not live
+
+  # Sales / GTM
+  CRM:            ""                      # markdown-first; Twenty optional bolt-on
+  sales:          ""                      # building (alpen-platform Sales dept)
+  marketing:      LinkedIn
+  competitive:    ""                      # context-dependent (brain-health for CCG, AI for Alpen)
+  analytics:      ""                      # no product analytics yet
+  SEO:            ""                      # searchfit-seo plugin available, not enabled
+  support:        ""                      # not used currently
+
+  # Legal
+  CLM:            ""                      # markdown-first contracts; no CLM tool
+  e-signature:    ""                      # deferred
+
+  # Project mgmt
+  project:        Markdown + GitHub Issues
+  Jira:           ""                      # not used
+
+  # AI
+  AI:             Claude Code (Sonnet/Haiku/Opus 4.X) + Anthropic API + local Ollama
+
+  # Design
+  design:         Figma
+  product:        alpentech.ai (the Alpen Platform — this very project)
+
+  # Domain-specific (CCG-relevant only)
+  scientific:     brain-health
+  literature:     PubMed + Semantic Scholar
+  journal:        brain-health peer-reviewed
+  lab:            ""                      # CCG works with labs, doesn't run one
+  clinical:       ""                      # CCG is workplace-wellbeing, not clinical
+  chemical:       ""
+  drug:           ""
+  genomics:       ""
+
+  # Operations (solo-operator scale)
+  ITSM:           ""
+  incident:       ""
+  procurement:    ""
+  erp:            ""
+
+  # Generic / context-only (customizer should leave these alone)
+  category:       ""
+  tool:           ""
+
+  # Org-specific channels
+  your-org-channel:  "@philhoward (Telegram DM to principal)"
+  your-team-channel: "@philhoward"        # solo operator; future: per-engagement group
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALPEN EXTENSIONS (new placeholders we INTRODUCE in customized plugins)
+# Customizer should grep `~~alpen-*` in addition to `~~*` and substitute.
+# These encode our tier-ladder, brand voice, entity routing, ICP, etc.
+# ─────────────────────────────────────────────────────────────────────────────
+alpen_extensions:
+
+  # ── Tier ladder: Alpen Tech ──
+  alpen-tier-1-name:        "Platform + Configuration"
+  alpen-tier-1-setup:       "$5K-$15K"
+  alpen-tier-1-monthly:     "$1K-$3K"
+  alpen-tier-1-cadence:     subscription
+  alpen-tier-2-name:        "Customization + Process Redesign"
+  alpen-tier-2-fee:         "$30K-$80K per sprint"
+  alpen-tier-2-cadence:     "project (4-8 weeks)"
+  alpen-tier-3-name:        "OCM-led Transformation"
+  alpen-tier-3-fee:         "$150K-$300K all-in"
+  alpen-tier-3-cadence:     "project (12-24 weeks)"
+  alpen-fractional-name:    "Fractional AI Thought Leadership"
+  alpen-fractional-monthly: "$5K / $10K / $15K-$20K"
+
+  # ── Tier ladder: CCG ──
+  ccg-tier-1-name:          "Research Readout"
+  ccg-tier-1-fee:           "$5K-$15K"
+  ccg-tier-2-name:          "Program Design"
+  ccg-tier-2-fee:           "$30K-$100K"
+  ccg-tier-3-name:          "Enterprise Engagement"
+  ccg-tier-3-fee:           "$150K-$500K (annual retainer)"
+
+  # ── Entity routing ──
+  alpen-entity-default:     ccg
+  alpen-entity-routing: |
+    phil@cognitivecapitalgroup.com → ccg
+    phil@alpentech.ai → alpen-tech
+    howardpm1@gmail.com → personal / hfo
+    krystal@cognitivecapitalgroup.com → ccg
+
+  # ── Brand voice ──
+  alpen-brand-voice-ccg-rules: |
+    - No em-dash (—); use comma or period
+    - No en-dash (–) in prose
+    - Formal academic register
+    - Brain-health domain anchored
+    - Cite Krystal as principal investigator / scientific authority
+    - Newsletter name: Synapse (renamed from Pulse 2026-04-26)
+  alpen-brand-voice-ccg-enforcement:  "post-write perl sweep on em/en dashes (see ~/Winnie/agents/scheduled-ccg-briefing pattern)"
+  alpen-brand-voice-ccg-style-guide:  "$VAULT/Skills/Krystal/brand-voice-guidelines.md"
+  alpen-brand-voice-alpen-rules: |
+    - Declarative, P&L-focused
+    - Tagline: "Business change moves P&L. AI earns its keep."
+    - Principal-as-author voice (Phil); Krystal-as-named-subject in 30% of content
+  alpen-brand-voice-alpen-style-guide: "(TBD — derive from existing alpentech.ai copy)"
+
+  # ── Principals ──
+  alpen-principal-name:           "Phil Howard"
+  alpen-principal-title:          "CEO / Principal"
+  alpen-principal-email-default:  "phil@cognitivecapitalgroup.com"
+  alpen-partner-name:             "Krystal Sexton"
+  alpen-partner-title:            "CCG Partner"
+  alpen-partner-email:            "krystal@cognitivecapitalgroup.com"
+  alpen-partner-scope:            "[ccg]"
+
+  # ── ICP: CCG ──
+  ccg-icp-titles: |
+    - Chief People Officer
+    - VP HR
+    - Head of Wellbeing
+    - Chief Medical Officer
+    - Chief Wellness Officer
+  ccg-icp-headcount-range:  "500 to 50,000"
+  ccg-icp-industries:       "pharma, financial-services, tech, healthcare"
+  ccg-icp-geographies:      "US, UK, EU"
+  ccg-icp-pain-points: |
+    - Workplace burnout / cognitive load
+    - Employee mental fitness
+    - Executive performance
+    - Return-to-office cognitive impact
+
+  # ── ICP: Alpen Tech ──
+  alpen-icp-titles: |
+    - CTO
+    - VP Engineering
+    - Head of AI
+    - Chief Digital Officer
+    - Founder / CEO (sub-50-person AI consulting firms)
+  alpen-icp-headcount-range:  "2 to 5,000"
+  alpen-icp-industries:       "pro-services, financial-services, healthcare, consulting"
+  alpen-icp-pain-points: |
+    - Solo founders bottlenecked on operations
+    - Consulting firms wanting to productize agent-ops
+    - SMBs without internal AI teams needing platform + config
+
+  # ── Vault paths ──
+  alpen-vault-path:        "~/Documents/Obsidian-Vault"
+  alpen-state-dir:         "~/.local/state/alpen"
+  alpen-log-dir:           "~/Winnie/logs"
+  alpen-fork-repo:         "~/Winnie/alpen-platform"
+
+  # ── Telemetry ──
+  alpen-telemetry-ledger:          "~/Winnie/logs/invocations.jsonl"
+  alpen-telemetry-sqlite:          "~/Winnie/logs/invocations.db"
+  alpen-telemetry-dashboard-port:  "5173"
+
+  # ── Existing infrastructure references ──
+  alpen-rag-mcp:           "hfo_rag (sqlite-vec + Ollama nomic-embed-text 768d)"
+  alpen-rag-ingest-cron:   "30 3 * * *"
+  alpen-plaud-watch-path:  "~/Library/CloudStorage/GoogleDrive-howardpm1@gmail.com/My Drive/Plaud"
+  alpen-account-routing:   "$VAULT/_meta/account-routing.yaml"
