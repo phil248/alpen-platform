@@ -97,13 +97,44 @@ def classify(
     return prefillable, unset, unknown
 
 
+def code_protected_ranges(text: str) -> list[tuple[int, int]]:
+    """Return [(start, end)] byte ranges where ~~ matches must be skipped:
+    fenced code blocks (```...```) and inline code spans (`...`).
+    Ranges are non-overlapping and sorted."""
+    ranges: list[tuple[int, int]] = []
+    # Fenced code blocks (triple-backtick) — match minimal pairs of ``` lines
+    for m in re.finditer(r"```.*?```", text, re.DOTALL):
+        ranges.append((m.start(), m.end()))
+    # Inline code spans — single backtick pair on one line
+    # (Skip backticks already inside a fenced range.)
+    for m in re.finditer(r"`[^`\n]+`", text):
+        # Only add if not within a fenced range
+        if not any(start <= m.start() < end for start, end in ranges):
+            ranges.append((m.start(), m.end()))
+    ranges.sort()
+    return ranges
+
+
+def in_protected(pos: int, ranges: list[tuple[int, int]]) -> bool:
+    for start, end in ranges:
+        if start <= pos < end:
+            return True
+        if pos < start:
+            return False
+    return False
+
+
 def substitute(
     files: list[Path],
     pack: dict[str, str],
     pack_keys_to_apply: set[str],
     dry_run: bool,
 ) -> tuple[int, list[tuple[Path, str, str]]]:
-    """Return (file_change_count, sample_diffs)."""
+    """Return (file_change_count, sample_diffs).
+
+    Skips ~~ matches inside markdown inline code spans (`...`) and fenced
+    code blocks (```...```). Documentation and examples that legitimately
+    mention ~~name as a literal stay untouched."""
     changes = 0
     sample_diffs: list[tuple[Path, str, str]] = []
     for f in files:
@@ -112,17 +143,20 @@ def substitute(
         except UnicodeDecodeError:
             continue
 
+        protected = code_protected_ranges(original)
+
         def replace(match: re.Match) -> str:
+            if in_protected(match.start(), protected):
+                return match.group(0)
             name = match.group(1)
             if name in pack_keys_to_apply:
                 return pack[name]
-            return match.group(0)  # leave ~~name in place
+            return match.group(0)
 
         new = PLACEHOLDER_RE.sub(replace, original)
         if new != original:
             changes += 1
             if len(sample_diffs) < 3:
-                # capture first changed line as sample
                 for o, n in zip(original.splitlines(), new.splitlines()):
                     if o != n:
                         sample_diffs.append((f, o.strip(), n.strip()))
