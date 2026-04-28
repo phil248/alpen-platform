@@ -48,7 +48,7 @@ When creating a new TASKS.md, use this exact template (without example tasks):
 Task format:
 - `- [ ] **Task title** - context, for whom, due date`
 - Sub-bullets for additional details
-- Completed: `- [x] Google Tasks~~ (date)`
+- Completed: `- [x] ~~Task~~ (date)`
 
 ## How to Interact
 
@@ -64,7 +64,7 @@ Task format:
 **When user says "done with X" / "finished X":**
 - Find the task
 - Change `[ ]` to `[x]`
-- Add strikethrough: `Google Tasks~~`
+- Add strikethrough: `~~task~~`
 - Add completion date
 - Move to Done section
 
