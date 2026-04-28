@@ -20,7 +20,7 @@ Update, create, or reprioritize a product roadmap.
 
 ### 1. Understand Current State
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Pull current roadmap items with their statuses, assignees, and dates
 - Identify items that are overdue, at risk, or recently completed
 - Surface any items without clear owners or dates

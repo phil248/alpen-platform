@@ -38,17 +38,17 @@ Ask the user for the following. Be conversational — do not dump all questions 
 
 ### 3. Pull Context from Connected Tools
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Search for related tickets, epics, or features
 - Pull in any existing requirements or acceptance criteria
 - Identify dependencies on other work items
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Search for related research documents, prior specs, or design docs
 - Pull in relevant user research findings
 - Find related meeting notes or decision records
 
-If **~~design** is connected:
+If **Figma** is connected:
 - Pull related mockups, wireframes, or design explorations
 - Search for design system components relevant to the feature
 

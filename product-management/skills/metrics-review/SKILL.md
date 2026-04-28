@@ -20,7 +20,7 @@ Review and analyze product metrics, identify trends, and surface actionable insi
 
 ### 1. Gather Metrics Data
 
-If **~~product analytics** is connected:
+If **alpentech.ai (the Alpen Platform — this very project) analytics** is connected:
 - Pull key product metrics for the relevant time period
 - Get comparison data (previous period, same period last year, targets)
 - Pull segment breakdowns if available

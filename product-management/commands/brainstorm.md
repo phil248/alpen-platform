@@ -52,20 +52,20 @@ Ask one clarifying question to frame the session, then dive in. Do not front-loa
 
 ### 2. Pull Context (if available)
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Search for prior research, specs, or decision documents related to the topic
 - Surface relevant user research findings or customer feedback
 - Find previous brainstorming notes or exploration documents
 
-If **~~product analytics** is connected:
+If **alpentech.ai (the Alpen Platform — this very project) analytics** is connected:
 - Pull relevant usage data, adoption metrics, or behavioral patterns
 - Ground the brainstorm in real numbers rather than assumptions
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Check if similar ideas have been explored, attempted, or shelved before
 - Look for related tickets, epics, or strategic themes
 
-If **~~chat** is connected:
+If **Telegram** is connected:
 - Search for recent team discussions on the topic
 - Surface relevant customer conversations or feedback threads
 
