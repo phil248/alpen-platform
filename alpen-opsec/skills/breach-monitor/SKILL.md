@@ -5,7 +5,26 @@ description: Check Have I Been Pwned and similar feeds daily for any email/handl
 
 # breach-monitor
 
-## Status: stub (v0.1)
+## Status: framework live (v0.1); requires HIBP_API_KEY to activate
+
+## v0.1 implementation
+
+`alpen-opsec/bin/breach-monitor.py --tenant <id>` — reads
+tenant.principals[].accounts[] (kind=gmail) for monitored emails, calls
+HIBP `/api/v3/breachedaccount/{email}` per address with rate limiting,
+diffs against `~/.local/state/alpen/opsec/breach-state.json`, surfaces
+ONLY new breaches in the daily report.
+
+Output: `$VAULT/HFO/OPSEC/Breach-Log/YYYY-MM-DD-breaches.md`
+
+Scheduled daily at 06:50 AM via `io.howardfamily.alpen.breach-monitor`,
+run by `~/Winnie/bin/alpen-breach-monitor.sh` (sources
+`~/Winnie/config/environment` so the gitignored HIBP_API_KEY is picked
+up without leaking into plist or git).
+
+**Activation**: HIBP requires a paid subscription ($3.95/mo). Set
+`export HIBP_API_KEY=xxx` in `~/Winnie/config/environment` to activate.
+Until set, the daily firing exits 0 with a "skipped" message.
 
 ## Intent
 
