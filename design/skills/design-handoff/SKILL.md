@@ -116,11 +116,11 @@ If a Figma URL is provided, pull the design from Figma. Otherwise, work from the
 
 ## If Connectors Available
 
-If **~~design tool** is connected:
+If **Figma tool** is connected:
 - Pull exact measurements, tokens, and component specs from Figma
 - Export assets and generate a complete spec sheet
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Link the handoff to the implementation ticket
 - Create sub-tasks for each section of the spec
 

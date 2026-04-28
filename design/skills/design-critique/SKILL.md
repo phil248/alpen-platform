@@ -104,11 +104,11 @@ If a Figma URL is provided, pull the design from Figma. If a file is referenced,
 
 ## If Connectors Available
 
-If **~~design tool** is connected:
+If **Figma tool** is connected:
 - Pull the design directly from Figma and inspect components, tokens, and layers
 - Compare against the existing design system for consistency
 
-If **~~user feedback** is connected:
+If **Phil Howard feedback** is connected:
 - Cross-reference design decisions with recent user feedback and support tickets
 
 ## Tips

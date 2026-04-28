@@ -113,11 +113,11 @@ Audit for accessibility: @$1
 
 ## If Connectors Available
 
-If **~~design tool** is connected:
+If **Figma tool** is connected:
 - Inspect color values, font sizes, and touch targets directly from Figma
 - Check component ARIA roles and keyboard behavior in the design spec
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Create tickets for each accessibility finding with severity and WCAG criterion
 - Link findings to existing accessibility remediation epics
 

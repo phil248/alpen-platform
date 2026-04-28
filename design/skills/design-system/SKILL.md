@@ -175,11 +175,11 @@ Common UI solutions combining components:
 
 ## If Connectors Available
 
-If **~~design tool** is connected:
+If **Figma tool** is connected:
 - Audit components directly in Figma — check naming, variants, and token usage
 - Pull component properties and layer structure for documentation
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Search for existing component documentation and usage guidelines
 - Publish updated documentation to your wiki
 

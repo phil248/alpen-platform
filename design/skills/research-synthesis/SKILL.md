@@ -73,15 +73,15 @@ Synthesize user research data into actionable insights. See the **user-research*
 
 ## If Connectors Available
 
-If **~~user feedback** is connected:
+If **Phil Howard feedback** is connected:
 - Pull support tickets, feature requests, and NPS responses to supplement research data
 - Cross-reference themes with real user complaints and requests
 
-If **~~product analytics** is connected:
+If **alpentech.ai (the Alpen Platform — this very project) analytics** is connected:
 - Validate qualitative findings with usage data and behavioral metrics
 - Quantify the impact of identified pain points
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Search for prior research studies and findings to compare against
 - Publish the synthesis to your research repository
 
