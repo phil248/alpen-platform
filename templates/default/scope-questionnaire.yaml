@@ -1,0 +1,138 @@
+# scope-questionnaire — used by alpen-deep-research / scoper skills to
+# structure a discovery conversation. Each question becomes an
+# AskUserQuestion if not already known from prior context.
+#
+# Field naming: {{namespace.field}} — populated into deal.* by the
+# scoper skill, then consumed by proposal-composer + sow-template.
+
+version: "0.1"
+applies_to: [proposal, sow]
+
+sections:
+  - id: client_basics
+    name: "Client basics"
+    questions:
+      - field: deal.client_name
+        prompt: "What is the legal name of the client organization?"
+        required: true
+      - field: deal.client_signatory_name
+        prompt: "Who at the client is authorized to sign?"
+        required: true
+      - field: deal.client_signatory_title
+        prompt: "What is their title?"
+        required: true
+      - field: deal.industry
+        prompt: "What industry is the client in?"
+        required: true
+      - field: deal.headcount_range
+        prompt: "Approximate headcount? (small <100, mid 100-1000, large 1000-10000, enterprise 10000+)"
+        required: false
+
+  - id: opportunity
+    name: "The opportunity"
+    questions:
+      - field: deal.problem_statement
+        prompt: "In 2-3 sentences: what problem is the client trying to solve?"
+        required: true
+      - field: deal.target_outcome
+        prompt: "What outcome do they want at the end of this engagement?"
+        required: true
+      - field: deal.success_metric
+        prompt: "How will success be measured? (a number, a deliverable, a capability transferred)"
+        required: true
+      - field: deal.urgency
+        prompt: "What is their timeline pressure? (none / Q-end / specific date / event-driven)"
+        required: false
+      - field: deal.alternatives_considered
+        prompt: "What alternatives have they already considered? (in-house, other vendors, do-nothing)"
+        required: false
+
+  - id: tier_routing
+    name: "Tier routing"
+    questions:
+      - field: deal.tier
+        prompt: "Which tier? (1 platform / 2 customization / 3 transformation)"
+        required: true
+        options: [1, 2, 3]
+      - field: deal.tier_rationale
+        prompt: "Why this tier and not the adjacent ones?"
+        required: true
+
+  - id: scope_tier_2_3
+    name: "Scope (Tier 2 and 3 only)"
+    when: "deal.tier in [2, 3]"
+    questions:
+      - field: deal.deliverable_1
+        prompt: "Primary deliverable — what they will have at the end"
+        required: true
+      - field: deal.deliverable_2
+        prompt: "Secondary deliverable"
+        required: false
+      - field: deal.deliverable_3
+        prompt: "Tertiary deliverable (if any)"
+        required: false
+      - field: deal.workstream_count
+        prompt: "How many parallel workstreams will the engagement run? (1-5)"
+        required: true
+      - field: deal.sprint_weeks
+        prompt: "Tier 2: how many weeks for the sprint? (typical 4-8)"
+        when: "deal.tier == 2"
+        required: true
+      - field: deal.phase_count
+        prompt: "Tier 3: how many phases? (typical 3-4)"
+        when: "deal.tier == 3"
+        required: true
+
+  - id: pricing
+    name: "Pricing"
+    questions:
+      - field: deal.value
+        prompt: "Total engagement value (use tier-appropriate ranges)"
+        required: true
+      - field: deal.payment_schedule
+        prompt: "Payment schedule (default: tier-1 monthly subscription, tier-2 25/50/25, tier-3 phase-gated)"
+        required: false
+      - field: deal.travel_estimate
+        prompt: "Tier 3 only: estimated travel + out-of-pocket"
+        when: "deal.tier == 3"
+        required: false
+
+  - id: team_and_access
+    name: "Team and access"
+    questions:
+      - field: deal.client_team_size
+        prompt: "How many client team members will participate?"
+        required: false
+      - field: deal.client_team_areas
+        prompt: "Which functional areas?"
+        required: false
+      - field: deal.access_systems
+        prompt: "What client systems need access? (e.g., GitHub, Salesforce, Notion)"
+        required: false
+      - field: deal.connector_list
+        prompt: "Tier 1: which platform connectors will the client use?"
+        when: "deal.tier == 1"
+        required: false
+
+  - id: risk
+    name: "Risk and contingencies"
+    questions:
+      - field: deal.scope_risks
+        prompt: "Top 1-3 risks to scope (likely overruns, dependencies, stakeholder issues)"
+        required: false
+      - field: deal.cancellation_terms
+        prompt: "Cancellation terms (default: pro-rated through last full month + 30-day notice)"
+        required: false
+
+  - id: legal
+    name: "Legal and contracting"
+    questions:
+      - field: deal.contracting_entity
+        prompt: "Which {{entity.display_name}} legal entity is contracting? (e.g., Cognitive Capital Group LLC)"
+        required: true
+      - field: deal.governing_law
+        prompt: "Governing law (default: state where {{entity.display_name}} entity is registered)"
+        required: false
+      - field: deal.requires_msa
+        prompt: "Does this client require an MSA before SOW? (yes / no / they have their own paper)"
+        required: true
