@@ -1,0 +1,239 @@
+# Alpen Platform tenant configuration — phil-howard
+# Schema: see bin/_tenant_models.py (Pydantic models)
+# Validate: bin/validate-tenant-config.py --tenant phil-howard
+
+schema_version: "0.1"
+
+# ─── Tenant identity ──────────────────────────────────────────
+tenant:
+  id: phil-howard
+  name: "Phil Howard / HFO"
+  type: family-office
+  timezone: America/Chicago
+  locale: en-US
+  vault_path: "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/PHoward"
+  state_dir: "~/.local/state/alpen"
+  log_dir: "~/Winnie/logs"
+  created_at: 2026-04-27
+
+# ─── Principals (humans who use the system) ───────────────────
+principals:
+  - id: phil
+    name: "Phil Howard"
+    role: ceo
+    scopes: [hfo, ccg, alpen-tech]
+    accounts:
+      - { kind: gmail,    address: phil@cognitivecapitalgroup.com, mcp: google_ccg_phil }
+      - { kind: gmail,    address: phil@alpentech.ai,              mcp: google_alpen_phil }
+      - { kind: gmail,    address: howardpm1@gmail.com,            mcp: google_personal_phil }
+      - { kind: telegram, handle: "@philhoward",                   mcp: telegram }
+  - id: krystal
+    name: "Krystal Sexton"
+    role: partner
+    scopes: [ccg]
+    accounts:
+      - { kind: gmail, address: krystal@cognitivecapitalgroup.com, mcp: google_ccg_krystal }
+
+# ─── Entities ─────────────────────────────────────────────────
+entities:
+  - id: ccg
+    display_name: "Cognitive Capital Group"
+    type: brain-health-consulting
+    domain: cognitivecapitalgroup.com
+    public: true
+    icp:
+      titles:
+        - Chief People Officer
+        - VP HR
+        - Head of Wellbeing
+        - Chief Medical Officer
+        - Chief Wellness Officer
+      headcount_range: [500, 50000]
+      industries: [pharma, financial-services, tech, healthcare]
+      geographies: [US, UK, EU]
+    tiers:
+      - { id: research-readout,      range: [5000, 15000],     cadence: project }
+      - { id: program-design,        range: [30000, 100000],   cadence: project }
+      - { id: enterprise-engagement, range: [150000, 500000],  cadence: annual-retainer }
+    brand:
+      voice_guide: templates/ccg/brand-voice.md
+      no_em_dash: true
+      newsletter:
+        name: Synapse
+        cadence: monthly
+    templates_dir: templates/ccg/
+
+  - id: alpen-tech
+    display_name: "Alpen Tech"
+    type: ai-consulting
+    domain: alpentech.ai
+    public: true
+    icp:
+      titles:
+        - CTO
+        - VP Engineering
+        - Head of AI
+        - Chief Digital Officer
+      headcount_range: [2, 5000]
+      industries: [pro-services, financial-services, healthcare, consulting]
+    tiers:
+      - { id: platform,       range: [1000, 3000],       cadence: monthly,  type: subscription }
+      - { id: customization,  range: [30000, 80000],     cadence: project }
+      - { id: transformation, range: [150000, 300000],   cadence: project }
+    brand:
+      voice_guide: templates/alpen-tech/brand-voice.md
+      tagline: "Business change moves P&L. AI earns its keep."
+    templates_dir: templates/alpen-tech/
+
+  - id: hfo
+    display_name: "Howard Family Office"
+    type: family-office
+    public: false
+    # No tiers — HFO is a consumer of services, not a seller
+
+# ─── Departments (the fixed 8-dept platform) ──────────────────
+departments:
+  office-of-principal: { enabled: true,  model: sonnet }
+  finance:             { enabled: true,  model: sonnet }
+  investments:         { enabled: true,  model: sonnet, private_to: [hfo] }
+  legal:               { enabled: true,  model: sonnet }
+  revenue:             { enabled: true,  model: sonnet, scopes: [ccg, alpen-tech] }
+  delivery:            { enabled: true,  model: sonnet, scopes: [ccg, alpen-tech] }
+  knowledge:           { enabled: true,  model: haiku  }
+  operations:          { enabled: true,  model: sonnet }
+
+# ─── Data stores (six-tier model per feedback_alpen_storage_patterns) ─
+data_stores:
+  rag:
+    backend: sqlite-vec
+    embedding:
+      provider: ollama
+      model: nomic-embed-text
+      dimensions: 768
+    db_path: "~/Winnie/data/rag.db"
+    kinds:
+      - { id: meeting-transcript,    private: false }
+      - { id: ccg-publication,       private: false, scopes: [ccg] }
+      - { id: ccg-foundational,      private: false, scopes: [ccg] }
+      - { id: voc-signals,           private: false }
+      - { id: sales-history,         private: false }
+      - { id: solutions-history,     private: false }
+      - { id: comp-intel,            private: false }
+      - { id: editorial-history,     private: false, scopes: [ccg] }
+      - { id: hfo-investment,        private: true,  acl: [phil] }
+      - { id: hfo-tax,               private: true,  acl: [phil] }
+      - { id: hfo-legal,             private: true,  acl: [phil] }
+      - { id: hfo-health,            private: true,  acl: [phil] }
+      - { id: hfo-opsec,             private: true,  acl: [phil] }
+  structured:
+    backend: sqlite
+    db_dir: "~/.local/state/alpen/sqlite/"
+    databases:
+      - { id: leads,        path: leads.db }
+      - { id: engagements,  path: engagements.db }
+      - { id: contracts,    path: contracts.db }
+      - { id: invocations,  path: "~/Winnie/logs/.invocations.db" }
+      - { id: positions,    path: positions.db,   private_to: [hfo] }
+      - { id: tax_events,   path: tax-events.db,  private_to: [hfo] }
+  vault:
+    backend: filesystem
+    path: "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/PHoward"
+    layout: by-entity
+    indices_dir: "~/.local/state/alpen/indices/"
+    sync_excluded: ["*.db", "*.db-wal", "*.db-shm"]   # required when vault on iCloud
+    encryption:
+      - { path: HFO/Health,     provider: age, recipients: [phil] }
+      - { path: HFO/OPSEC,      provider: age, recipients: [phil] }
+      - { path: HFO/Tax-Estate, provider: age, recipients: [phil] }
+  backup:
+    nightly_targets: [rag, structured, indices]
+    weekly_targets: [logs]
+    destination: "~/Winnie/backups/"   # NOT iCloud, NOT Documents (TCC restrictions)
+
+# ─── Integrations ─────────────────────────────────────────────
+integrations:
+  email:
+    primary: google-workspace
+  calendar:
+    primary: google-workspace
+  drive:
+    primary: google-workspace
+  voice:
+    provider: plaud
+    watch_path: "~/Library/CloudStorage/GoogleDrive-howardpm1@gmail.com/My Drive/Plaud"
+  transcription:
+    provider: whisper-cpp
+    model: "~/.cache/whisper-models/ggml-large-v3-turbo.bin"
+  ocr:
+    provider: tesseract
+  ai_models:
+    primary:
+      provider: anthropic
+      models:
+        sonnet: claude-sonnet-4-6
+        haiku:  claude-haiku-4-5
+        opus:   claude-opus-4-7
+    embedding:
+      provider: ollama
+      model: nomic-embed-text
+  optional:
+    crm:         { provider: twenty,    enabled: false }
+    pm:          { provider: plane,     enabled: false }
+    bookkeeping: { provider: beancount, enabled: false }
+    automation:  { provider: n8n,       enabled: false }
+
+# ─── Templates ────────────────────────────────────────────────
+templates:
+  default_dir: templates/default/
+  override_resolution: "entity > tenant > default"
+  required:
+    - proposal-tier-1.md
+    - proposal-tier-2.md
+    - proposal-tier-3.md
+    - scope-questionnaire.yaml
+    - msa-template.md
+    - sow-template.md
+    - qbr-deck.md
+    - status-report.md
+    - kickoff-deck.md
+    - brand-voice.md
+
+# ─── Telemetry ────────────────────────────────────────────────
+telemetry:
+  enabled: true
+  ledger: "~/Winnie/logs/invocations.jsonl"
+  sqlite: "~/Winnie/logs/invocations.db"
+  dashboard:
+    enabled: true
+    port: 5173
+  expose_to_principal: true
+  expose_to_customer: true
+  privacy:
+    redact_pii_in_summaries: true
+    excluded_kinds: [hfo-health, hfo-tax, hfo-opsec, hfo-investment]
+
+# ─── Schedules ────────────────────────────────────────────────
+schedules:
+  cron:
+    - { id: rag-ingest,           cron: "30 3 * * *",          agent: rag-ingest, runtime: python }
+    - { id: nightly-backup,       cron: "30 2 * * *",          agent: nightly-backup, runtime: bash }
+    - { id: daily-ai-briefing,    cron: "45 6 * * 1-5",        agent: daily-ai-briefing }
+    - { id: email-triage,         cron: "35 7 * * 1-5",        agent: email-triage }
+    - { id: meeting-prep,         cron: "20 7 * * 1-5",        agent: meeting-prep }
+    - { id: ccg-briefing,         cron: "0 7 * * 1-5",         agent: ccg-briefing,        scopes: [ccg] }
+    - { id: pipeline-review,      cron: "0 8 * * 1",           agent: pipeline-review }
+    - { id: quarterly-advisory,   cron: "50 6 1-3 1,4,7,10 *", agent: advisory-board }
+    - { id: daily-standup,        cron: "42 7 * * *",          agent: daily-standup }
+  watchpaths:
+    - { path: "~/Library/CloudStorage/GoogleDrive-howardpm1@gmail.com/My Drive/Plaud", agent: plaud-ingest }
+
+# ─── Feature flags ────────────────────────────────────────────
+features:
+  multi_tenant: false
+  advisory_board: true
+  voice_of_customer: true
+  expansion_signal_detection: true
+  competitor_watch: true
+  external_crm: false
+  external_pm: false
+  external_bookkeeping: false
