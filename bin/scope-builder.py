@@ -119,31 +119,145 @@ def prefill_from_lead(lead: dict | None, deal: dict) -> int:
     return n
 
 
+SCOPE_EXTRACTION_PROMPT = """You are extracting scoping fields from a discovery-call transcript for a consulting engagement.
+
+The output drives a proposal template. Be CONSERVATIVE: only fill a field if the
+transcript clearly supports it. Empty / TBD beats hallucinated.
+
+Return ONE JSON OBJECT ONLY (no preamble, no markdown). Fields (all optional):
+
+{
+  "client_name":        "<the client organization>",
+  "industry":           "<their industry, one short phrase>",
+  "headcount_range":    "<small <100 | mid 100-1000 | large 1000-10000 | enterprise 10000+>",
+  "problem_statement":  "<one sentence: what the client is trying to solve>",
+  "target_outcome":     "<one sentence: what they want at the end of the engagement>",
+  "success_metric":     "<one sentence: how success is measured (number, deliverable, capability)>",
+  "urgency":            "<none | Q-end | specific date | event-driven>",
+  "alternatives_considered": "<comma-list of alternatives they mentioned: in-house, other vendors, do-nothing>",
+  "tier_signal":        "<1 | 2 | 3 — best guess from scope and value language>",
+  "tier_rationale":     "<one sentence explaining the tier signal>",
+  "value_signal":       "<integer USD if a number is mentioned; null otherwise>",
+  "deliverable_1":      "<primary deliverable if discussed>",
+  "deliverable_2":      "<secondary if discussed>",
+  "deliverable_3":      "<tertiary if discussed>",
+  "client_team_size":   "<integer if mentioned>",
+  "client_team_areas":  "<comma-list of areas: HR, IT, Engineering, etc.>",
+  "access_systems":     "<comma-list of systems they have / would grant access to>",
+  "scope_risks":        "<top 1-3 risks named, semicolon-separated>"
+}
+
+Omit fields you cannot fill. Return {} if the transcript has no scope-relevant content.
+"""
+
+
 def prefill_from_transcript(transcript_path: Path | None, deal: dict) -> int:
-    """Best-effort field fill from a discovery transcript. v0.1 is heuristic;
-    a v0.2 could call claude -p with structured-extract prompt similar to voc-extract."""
+    """Fill deal fields from a discovery transcript via claude -p structured extraction.
+
+    v0.2 (current): calls claude -p with SCOPE_EXTRACTION_PROMPT, parses JSON, merges.
+    Falls back to heuristic regex scan if claude CLI unavailable or extraction fails.
+    """
     if not transcript_path or not transcript_path.is_file():
         return 0
-    text = transcript_path.read_text()
+    text = transcript_path.read_text(errors="replace")[:80000]  # cap massive transcripts
     n = 0
 
-    # Look for an "AI Summary" or first paragraph that mentions client need
-    # Heuristic: extract first 'Problems' bullet -> deal.problem_statement
+    # Try Claude extraction first
+    extracted = _extract_via_claude(text)
+    if extracted:
+        n += _merge_extraction_into_deal(extracted, deal)
+        return n
+
+    # Fallback: heuristic regex scan (the original v0.1 approach)
     problems = re.search(r"##.*Problems[:\s]*\n(.*?)(?=\n##|\Z)", text, re.DOTALL)
     if problems and not deal.get("problem_statement"):
         first_bullet = re.search(r"^\s*[-*]\s+(.+?)$", problems.group(1), re.MULTILINE)
         if first_bullet:
             deal["problem_statement"] = first_bullet.group(1).strip()[:300]
             n += 1
-
-    # Heuristic: first 'Plans' bullet -> deal.target_outcome
     plans = re.search(r"##.*Plans[:\s]*\n(.*?)(?=\n##|\Z)", text, re.DOTALL)
     if plans and not deal.get("target_outcome"):
         first_bullet = re.search(r"^\s*[-*]\s+(.+?)$", plans.group(1), re.MULTILINE)
         if first_bullet:
             deal["target_outcome"] = first_bullet.group(1).strip()[:300]
             n += 1
+    return n
 
+
+def _extract_via_claude(transcript_text: str, timeout: int = 180) -> dict | None:
+    """Run claude -p with SCOPE_EXTRACTION_PROMPT; return parsed JSON object or None."""
+    full_prompt = (
+        f"{SCOPE_EXTRACTION_PROMPT}\n\n--- TRANSCRIPT ---\n{transcript_text}\n--- END ---\n\n"
+        "Return the JSON object now."
+    )
+    try:
+        result = subprocess.run(
+            [
+                "claude", "-p",
+                "--settings", str(Path.home() / "Winnie" / "config" / "scheduled.settings.json"),
+                "--dangerously-skip-permissions",
+                full_prompt,
+            ],
+            capture_output=True, text=True, timeout=timeout, check=False,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        print(f"  ! claude CLI failed: {e}", file=sys.stderr)
+        return None
+    if result.returncode != 0:
+        print(f"  ! claude exit {result.returncode}: {result.stderr[:200]}", file=sys.stderr)
+        return None
+    output = result.stdout.strip()
+    output = re.sub(r"^Warning: no stdin.*?\n", "", output, count=1)
+    m = re.search(r"\{[\s\S]*\}", output)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return None
+
+
+def _merge_extraction_into_deal(extracted: dict, deal: dict) -> int:
+    """Merge extracted fields into deal; only fill empty deal slots."""
+    n = 0
+    field_map = {
+        "client_name":              "client_name",
+        "industry":                 "industry",
+        "headcount_range":          "headcount_range",
+        "problem_statement":        "problem_statement",
+        "target_outcome":           "target_outcome",
+        "success_metric":           "success_metric",
+        "urgency":                  "urgency",
+        "alternatives_considered":  "alternatives_considered",
+        "tier_rationale":           "tier_rationale",
+        "deliverable_1":            "deliverable_1",
+        "deliverable_2":            "deliverable_2",
+        "deliverable_3":            "deliverable_3",
+        "client_team_size":         "client_team_size",
+        "client_team_areas":        "client_team_areas",
+        "access_systems":           "access_systems",
+        "scope_risks":              "scope_risks",
+    }
+    for ext_key, deal_key in field_map.items():
+        v = extracted.get(ext_key)
+        if v in (None, "", "null"):
+            continue
+        if deal.get(deal_key) in (None, ""):
+            deal[deal_key] = str(v).strip()[:400]
+            n += 1
+    # Tier + value need special handling
+    if "tier_signal" in extracted and not deal.get("tier"):
+        try:
+            deal["tier"] = int(extracted["tier_signal"])
+            n += 1
+        except (ValueError, TypeError):
+            pass
+    if "value_signal" in extracted and not deal.get("value"):
+        try:
+            deal["value"] = int(extracted["value_signal"])
+            n += 1
+        except (ValueError, TypeError):
+            pass
     return n
 
 
