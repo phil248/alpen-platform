@@ -143,6 +143,21 @@ def next_invoice_number(prefix: str, year: int) -> str:
     return f"{prefix}-{year}-{nxt:03d}"
 
 
+def cumulative_invoiced(contract_id: str) -> int:
+    """Sum of amounts on contract_payment rows that are already invoiced
+    (invoice_id set, regardless of paid status). Used for NTE cap check."""
+    if not CONTRACTS_DB.is_file():
+        return 0
+    conn = sqlite3.connect(CONTRACTS_DB)
+    row = conn.execute(
+        "SELECT COALESCE(SUM(amount), 0) FROM contract_payment "
+        "WHERE contract_id = ? AND invoiced_at IS NOT NULL",
+        (contract_id,),
+    ).fetchone()
+    conn.close()
+    return int(row[0] or 0)
+
+
 def mark_invoiced(payment_id: int, invoice_number: str, invoiced_at_iso: str) -> bool:
     if not CONTRACTS_DB.is_file():
         return False
@@ -634,10 +649,13 @@ def main() -> int:
     pdf_count = 0
     draft_count = 0
     reminder_count = 0
+    nte_exceeded_count = 0
     failures: list[str] = []
     # In dry-run, mark_invoiced never commits, so next_invoice_number would
     # return the same value every iteration. Track a local counter for preview.
     dry_run_counter = 0
+    # NTE check uses contract.total_value if set. None means no cap (don't check).
+    nte_cap = contract.get("total_value")
 
     # Process one milestone at a time so each gets its own number
     for p in payments:
@@ -648,6 +666,25 @@ def main() -> int:
             dry_run_counter += 1
         else:
             invoice_number = next_invoice_number(prefix, year)
+
+        # NTE cap check — warn but don't block. Cumulative includes any rows
+        # marked invoiced earlier in THIS run (mark_invoiced commits per loop).
+        nte_warning: str | None = None
+        if nte_cap and int(nte_cap) > 0:
+            already = cumulative_invoiced(contract["id"])
+            proposed_total = already + int(p["amount"])
+            if proposed_total > int(nte_cap):
+                delta = proposed_total - int(nte_cap)
+                nte_warning = (
+                    f"NTE EXCEEDED: this invoice ({invoice_number}, ${p['amount']:,}) "
+                    f"brings cumulative billing on this contract to ${proposed_total:,}, "
+                    f"which is ${delta:,} over the contract NTE of ${int(nte_cap):,}. "
+                    "Amend the SOW before issuing if the client has not already authorized "
+                    "the additional spend."
+                )
+                nte_exceeded_count += 1
+                # Loud print so it can't be missed
+                print(f"  ! {nte_warning}")
 
         # Markdown rendering
         deal = {
@@ -669,7 +706,8 @@ def main() -> int:
             "tax_amount":           "0",
             "total_due":            f"{p['amount']:,}",
             "payment_instructions": contract.get("billing_payment_info") or "Wire instructions provided separately.",
-            "notes":                contract.get("billing_notes") or "",
+            "notes":                ((nte_warning + "\n\n") if nte_warning else "")
+                                    + (contract.get("billing_notes") or ""),
         }
         entity_ctx = {**entity, "tax_id": billing.get("tax_id") or "TBD"}
         context = {
@@ -715,7 +753,7 @@ def main() -> int:
                 tax=0,
                 total_due=p["amount"] * 100,
                 payment_info_lines=payment_info_lines,
-                notes_lines=notes_lines,
+                notes_lines=([nte_warning] if nte_warning else []) + notes_lines,
                 accent_color_hex=accent_color,
             )
             pdf_candidate = out_dir / f"{invoice_number}.pdf"
@@ -777,6 +815,8 @@ def main() -> int:
     print(f"pdfs:      {pdf_count}")
     print(f"drafts:    {draft_count}")
     print(f"reminders: {reminder_count}")
+    if nte_exceeded_count:
+        print(f"NTE flag:  {nte_exceeded_count} invoice(s) tagged as exceeding contract cap")
     if failures:
         print(f"failures:  {len(failures)}: {failures[:5]}")
 
@@ -787,6 +827,7 @@ def main() -> int:
                    pdfs_generated=pdf_count,
                    gmail_drafts=draft_count,
                    calendar_reminders=reminder_count,
+                   nte_exceeded=nte_exceeded_count,
                    failures=len(failures),
                    dry_run=int(args.dry_run),
                    duration_seconds=round(time.time() - start, 2))
