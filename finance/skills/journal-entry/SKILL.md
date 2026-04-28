@@ -32,14 +32,14 @@ Prepare journal entries with proper debits, credits, supporting detail, and revi
 
 ### 1. Gather Source Data
 
-If ~~erp or ~~data warehouse is connected:
+If ~~erp or SQLite + sqlite-vec warehouse is connected:
 - Pull the trial balance for the specified period
 - Pull subledger detail for the relevant accounts
 - Pull prior period entries of the same type for reference
 - Identify the current GL balances for affected accounts
 
 If no data source is connected:
-> Connect ~~erp or ~~data warehouse to pull GL data automatically. You can also paste trial balance data or upload a spreadsheet.
+> Connect ~~erp or SQLite + sqlite-vec warehouse to pull GL data automatically. You can also paste trial balance data or upload a spreadsheet.
 
 Prompt the user to provide:
 - Trial balance or GL balances for affected accounts
