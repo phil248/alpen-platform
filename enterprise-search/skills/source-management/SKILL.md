@@ -16,12 +16,12 @@ Determine which MCP sources are connected by checking available tools. Each sour
 
 | Source | Key capabilities |
 |--------|-----------------|
-| **~~chat** | Search messages, read channels and threads |
-| **~~email** | Search messages, read individual emails |
-| **~~cloud storage** | Search files, fetch document contents |
-| **~~project tracker** | Search tasks, typeahead search |
+| **Telegram** | Search messages, read channels and threads |
+| **Gmail** | Search messages, read individual emails |
+| **Local macOS + Google Drive + Firebase storage** | Search files, fetch document contents |
+| **Markdown + GitHub Issues tracker** | Search tasks, typeahead search |
 | **~~CRM** | Query records (accounts, contacts, opportunities) |
-| **~~knowledge base** | Semantic search, keyword search |
+| **Obsidian + sqlite-vec RAG base** | Semantic search, keyword search |
 
 If a tool prefix is available, the source is connected and searchable.
 
@@ -33,12 +33,12 @@ When a user searches but has few or no sources connected:
 You currently have [N] source(s) connected: [list].
 
 To expand your search, you can connect additional sources in your MCP settings:
-- ~~chat — messages, threads, channels
-- ~~email — emails, conversations, attachments
-- ~~cloud storage — docs, sheets, slides
-- ~~project tracker — tasks, projects, milestones
+- Telegram — messages, threads, channels
+- Gmail — emails, conversations, attachments
+- Local macOS + Google Drive + Firebase storage — docs, sheets, slides
+- Markdown + GitHub Issues tracker — tasks, projects, milestones
 - ~~CRM — accounts, contacts, opportunities
-- ~~knowledge base — wiki pages, knowledge base articles
+- Obsidian + sqlite-vec RAG base — wiki pages, knowledge base articles
 
 The more sources you connect, the more complete your search results.
 ```
@@ -62,56 +62,56 @@ Different query types benefit from searching certain sources first. Use these pr
 
 **Decision queries** ("What did we decide..."):
 ```
-1. ~~chat (conversations where decisions happen)
-2. ~~email (decision confirmations, announcements)
-3. ~~cloud storage (meeting notes, decision logs)
+1. Telegram (conversations where decisions happen)
+2. Gmail (decision confirmations, announcements)
+3. Local macOS + Google Drive + Firebase storage (meeting notes, decision logs)
 4. Wiki (if decisions are documented)
 5. Task tracker (if decisions are captured in tasks)
 ```
 
 **Status queries** ("What's the status of..."):
 ```
-1. Task tracker (~~project tracker — authoritative status)
-2. ~~chat (real-time discussion)
-3. ~~cloud storage (status docs, reports)
-4. ~~email (status update emails)
+1. Task tracker (Markdown + GitHub Issues tracker — authoritative status)
+2. Telegram (real-time discussion)
+3. Local macOS + Google Drive + Firebase storage (status docs, reports)
+4. Gmail (status update emails)
 5. Wiki (project pages)
 ```
 
 **Document queries** ("Where's the doc for..."):
 ```
-1. ~~cloud storage (primary doc storage)
-2. Wiki / ~~knowledge base (knowledge base)
-3. ~~email (docs shared via email)
-4. ~~chat (docs shared in channels)
+1. Local macOS + Google Drive + Firebase storage (primary doc storage)
+2. Wiki / Obsidian + sqlite-vec RAG base (knowledge base)
+3. Gmail (docs shared via email)
+4. Telegram (docs shared in channels)
 5. Task tracker (docs linked to tasks)
 ```
 
 **People queries** ("Who works on..." / "Who knows about..."):
 ```
-1. ~~chat (message authors, channel members)
+1. Telegram (message authors, channel members)
 2. Task tracker (task assignees)
-3. ~~cloud storage (doc authors, collaborators)
+3. Local macOS + Google Drive + Firebase storage (doc authors, collaborators)
 4. ~~CRM (account owners, contacts)
-5. ~~email (email participants)
+5. Gmail (email participants)
 ```
 
 **Factual/Policy queries** ("What's our policy on..."):
 ```
-1. Wiki / ~~knowledge base (official documentation)
-2. ~~cloud storage (policy docs, handbooks)
-3. ~~email (policy announcements)
-4. ~~chat (policy discussions)
+1. Wiki / Obsidian + sqlite-vec RAG base (official documentation)
+2. Local macOS + Google Drive + Firebase storage (policy docs, handbooks)
+3. Gmail (policy announcements)
+4. Telegram (policy discussions)
 ```
 
 ### Default Priority (General Queries)
 
 When query type is unclear:
 ```
-1. ~~chat (highest volume, most real-time)
-2. ~~email (formal communications)
-3. ~~cloud storage (documents and files)
-4. Wiki / ~~knowledge base (structured knowledge)
+1. Telegram (highest volume, most real-time)
+2. Gmail (formal communications)
+3. Local macOS + Google Drive + Firebase storage (documents and files)
+4. Wiki / Obsidian + sqlite-vec RAG base (structured knowledge)
 5. Task tracker (work items)
 6. CRM (customer data)
 ```
@@ -153,12 +153,12 @@ Track source availability during a session:
 
 ```
 Source Status:
-  ~~chat:        ✓ Available
-  ~~email:        ✓ Available
-  ~~cloud storage:  ✓ Available
-  ~~project tracker:        ✗ Not connected
+  Telegram:        ✓ Available
+  Gmail:        ✓ Available
+  Local macOS + Google Drive + Firebase storage:  ✓ Available
+  Markdown + GitHub Issues tracker:        ✗ Not connected
   ~~CRM:   ✗ Not connected
-  ~~knowledge base:      ⚠ Rate limited (retry in 2 min)
+  Obsidian + sqlite-vec RAG base:      ⚠ Rate limited (retry in 2 min)
 ```
 
 When reporting search results, include which sources were searched so the user knows the scope of the answer.

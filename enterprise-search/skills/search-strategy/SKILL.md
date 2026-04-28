@@ -19,9 +19,9 @@ Turn this:
 
 Into targeted searches across every connected source:
 ```
-~~chat:  "API migration timeline decision" (semantic) + "API migration" in:#engineering after:2025-01-01
-~~knowledge base: semantic search "API migration timeline decision"
-~~project tracker:  text search "API migration" in relevant workspace
+Telegram:  "API migration timeline decision" (semantic) + "API migration" in:#engineering after:2025-01-01
+Obsidian + sqlite-vec RAG base: semantic search "API migration timeline decision"
+Markdown + GitHub Issues tracker:  text search "API migration" in relevant workspace
 ```
 
 Then synthesize the results into a single coherent answer.
@@ -34,7 +34,7 @@ Classify the user's question to determine search strategy:
 
 | Query Type | Example | Strategy |
 |-----------|---------|----------|
-| **Decision** | "What did we decide about X?" | Prioritize conversations (~~chat, email), look for conclusion signals |
+| **Decision** | "What did we decide about X?" | Prioritize conversations (Telegram, email), look for conclusion signals |
 | **Status** | "What's the status of Project Y?" | Prioritize recent activity, task trackers, status updates |
 | **Document** | "Where's the spec for Z?" | Prioritize Drive, wiki, shared docs |
 | **Person** | "Who's working on X?" | Search task assignments, message authors, doc collaborators |
@@ -74,7 +74,7 @@ Queries: "Kubernetes", "k8s", "cluster", "container orchestration"
 
 ## Source-Specific Query Translation
 
-### ~~chat
+### Telegram
 
 **Semantic search** (natural language questions):
 ```
@@ -89,7 +89,7 @@ query: "from:<@UserID> aurora"
 ```
 
 **Filter mapping:**
-| Enterprise filter | ~~chat syntax |
+| Enterprise filter | Telegram syntax |
 |------------------|--------------|
 | `from:sarah` | `from:sarah` or `from:<@USERID>` |
 | `in:engineering` | `in:engineering` |
@@ -98,7 +98,7 @@ query: "from:<@UserID> aurora"
 | `type:thread` | `is:thread` |
 | `type:file` | `has:file` |
 
-### ~~knowledge base (Wiki)
+### Obsidian + sqlite-vec RAG base (Wiki)
 
 **Semantic search** — Use for conceptual queries:
 ```
@@ -111,7 +111,7 @@ query: "API migration"
 query: "\"API migration timeline\""  (exact phrase)
 ```
 
-### ~~project tracker
+### Markdown + GitHub Issues tracker
 
 **Task search:**
 ```
@@ -122,7 +122,7 @@ assignee_any: "me"  (for "my tasks" queries)
 ```
 
 **Filter mapping:**
-| Enterprise filter | ~~project tracker parameter |
+| Enterprise filter | Markdown + GitHub Issues tracker parameter |
 |------------------|----------------|
 | `from:sarah` | `assignee_any` or `created_by_any` |
 | `after:2025-01-01` | `modified_on_after: "2025-01-01"` |
@@ -212,7 +212,7 @@ Always execute searches across sources in parallel, never sequentially. The tota
 ```
 [User query]
      ↓ decompose
-[~~chat query] [~~email query] [~~cloud storage query] [Wiki query] [~~project tracker query]
+[Telegram query] [Gmail query] [Local macOS + Google Drive + Firebase storage query] [Wiki query] [Markdown + GitHub Issues tracker query]
      ↓            ↓            ↓              ↓            ↓
   (parallel execution)
      ↓

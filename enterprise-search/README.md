@@ -11,9 +11,9 @@ One query searches all your connected tools simultaneously. Claude decomposes yo
 ```
 You: "What did we decide about the API redesign?"
               ↓ Claude searches
-~~chat: #engineering thread from Tuesday with the decision
-~~email: Follow-up email from Sarah with the spec
-~~cloud storage: Updated API design doc (modified yesterday)
+Telegram: #engineering thread from Tuesday with the decision
+Gmail: Follow-up email from Sarah with the spec
+Local macOS + Google Drive + Firebase storage: Updated API design doc (modified yesterday)
               ↓ Claude synthesizes
 "The team decided on Tuesday to go with REST over GraphQL.
  Sarah sent the updated spec Thursday. The design doc
@@ -32,9 +32,9 @@ Connect any combination of sources. The more you connect, the more complete your
 
 | Source | What it finds |
 |--------|---------------|
-| **~~chat** | Messages, threads, channels, DMs |
-| **~~email** | Emails, attachments, conversations |
-| **~~cloud storage** | Docs, sheets, slides, PDFs |
+| **Telegram** | Messages, threads, channels, DMs |
+| **Gmail** | Emails, attachments, conversations |
+| **Local macOS + Google Drive + Firebase storage** | Docs, sheets, slides, PDFs |
 | **Wiki / Knowledge Base** | Internal documentation, runbooks |
 | **Project Management** | Tasks, issues, epics, milestones |
 | **CRM** | Accounts, contacts, opportunities |
@@ -92,9 +92,9 @@ Three skills power the search experience:
 You: /enterprise-search:search when did we decide to switch to Postgres?
 
 Claude searches:
-  ~~chat → #engineering, #infrastructure for "postgres" "switch" "decision"
-  ~~email → threads with "postgres" in subject
-  ~~cloud storage → docs mentioning database migration
+  Telegram → #engineering, #infrastructure for "postgres" "switch" "decision"
+  Gmail → threads with "postgres" in subject
+  Local macOS + Google Drive + Firebase storage → docs mentioning database migration
 
 Result: "The decision was made March 3 in #infrastructure (link).
          Sarah's email on March 4 confirmed the timeline.
@@ -107,9 +107,9 @@ Result: "The decision was made March 3 in #infrastructure (link).
 You: /enterprise-search:digest --weekly
 
 Claude scans:
-  ~~chat → channels you're in, DMs, mentions
-  ~~email → inbox activity
-  ~~cloud storage → docs shared with you or modified
+  Telegram → channels you're in, DMs, mentions
+  Gmail → inbox activity
+  Local macOS + Google Drive + Firebase storage → docs shared with you or modified
 
 Result: Grouped summary by project with action items
         flagged and decisions highlighted.
@@ -121,8 +121,8 @@ Result: Grouped summary by project with action items
 You: /enterprise-search:search who knows about our Kubernetes setup?
 
 Claude searches:
-  ~~chat → messages about Kubernetes, k8s, clusters
-  ~~cloud storage → docs authored about infrastructure
+  Telegram → messages about Kubernetes, k8s, clusters
+  Local macOS + Google Drive + Firebase storage → docs authored about infrastructure
   Wiki → runbooks and architecture docs
 
 Result: "Based on message history and doc authorship,
@@ -145,7 +145,7 @@ claude plugins add knowledge-work-plugins/enterprise-search
 /enterprise-search:digest --daily
 ```
 
-The more sources you connect via MCP, the more complete your search results. Start with ~~chat, ~~email, and ~~cloud storage, then add your wiki, project management tool, and CRM as needed.
+The more sources you connect via MCP, the more complete your search results. Start with Telegram, Gmail, and Local macOS + Google Drive + Firebase storage, then add your wiki, project management tool, and CRM as needed.
 
 ---
 

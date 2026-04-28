@@ -16,19 +16,19 @@ Search across all connected MCP sources in a single query. Decompose the user's 
 
 Before searching, determine which MCP sources are available. Attempt to identify connected tools from the available tool list. Common sources:
 
-- **~~chat** — chat platform tools
-- **~~email** — email tools
-- **~~cloud storage** — cloud storage tools
-- **~~project tracker** — project tracking tools
+- **Telegram** — chat platform tools
+- **Gmail** — email tools
+- **Local macOS + Google Drive + Firebase storage** — cloud storage tools
+- **Markdown + GitHub Issues tracker** — project tracking tools
 - **~~CRM** — CRM tools
-- **~~knowledge base** — knowledge base tools
+- **Obsidian + sqlite-vec RAG base** — knowledge base tools
 
 If no MCP sources are connected:
 ```
 To search across your tools, you'll need to connect at least one source.
-Check your MCP settings to add ~~chat, ~~email, ~~cloud storage, or other tools.
+Check your MCP settings to add Telegram, Gmail, Local macOS + Google Drive + Firebase storage, or other tools.
 
-Supported sources: ~~chat, ~~email, ~~cloud storage, ~~project tracker, ~~CRM, ~~knowledge base,
+Supported sources: Telegram, Gmail, Local macOS + Google Drive + Firebase storage, Markdown + GitHub Issues tracker, ~~CRM, Obsidian + sqlite-vec RAG base,
 and any other MCP-connected service.
 ```
 
@@ -39,7 +39,7 @@ Analyze the search query to understand:
 - **Intent**: What is the user looking for? (a decision, a document, a person, a status update, a conversation)
 - **Entities**: People, projects, teams, tools mentioned
 - **Time constraints**: Recency signals ("this week", "last month", specific dates)
-- **Source hints**: References to specific tools ("in ~~chat", "that email", "the doc")
+- **Source hints**: References to specific tools ("in Telegram", "that email", "the doc")
 - **Filters**: Extract explicit filters from the query:
   - `from:` — Filter by sender/author
   - `in:` — Filter by channel, folder, or location
@@ -51,23 +51,23 @@ Analyze the search query to understand:
 
 For each available source, create a targeted sub-query using that source's native search syntax:
 
-**~~chat:**
+**Telegram:**
 - Use available search and read tools for your chat platform
 - Translate filters: `from:` maps to sender, `in:` maps to channel/room, dates map to time range filters
 - Use natural language queries for semantic search when appropriate
 - Use keyword queries for exact matches
 
-**~~email:**
+**Gmail:**
 - Use available email search tools
 - Translate filters: `from:` maps to sender, dates map to time range filters
 - Map `type:` to attachment filters or subject-line searches as appropriate
 
-**~~cloud storage:**
+**Local macOS + Google Drive + Firebase storage:**
 - Use available file search tools
 - Translate to file query syntax: name contains, full text contains, modified date, file type
 - Consider both file names and content
 
-**~~project tracker:**
+**Markdown + GitHub Issues tracker:**
 - Use available task search or typeahead tools
 - Map to task text search, assignee filters, date filters, project filters
 
@@ -75,7 +75,7 @@ For each available source, create a targeted sub-query using that source's nativ
 - Use available CRM query tools
 - Search across Account, Contact, Opportunity, and other relevant objects
 
-**~~knowledge base:**
+**Obsidian + sqlite-vec RAG base:**
 - Use semantic search for conceptual questions
 - Use keyword search for exact matches
 
@@ -91,7 +91,7 @@ For each source:
 ### 5. Rank and Deduplicate Results
 
 **Deduplication:**
-- Identify the same information appearing across sources (e.g., a decision discussed in ~~chat AND confirmed via email)
+- Identify the same information appearing across sources (e.g., a decision discussed in Telegram AND confirmed via email)
 - Group related results together rather than showing duplicates
 - Prefer the most authoritative or complete version
 
@@ -110,9 +110,9 @@ Format the response as a synthesized answer, not a raw list of results:
 [Direct answer to the question]
 
 Sources:
-- [Source 1: brief description] (~~chat, #channel, date)
-- [Source 2: brief description] (~~email, from person, date)
-- [Source 3: brief description] (~~cloud storage, doc name, last modified)
+- [Source 1: brief description] (Telegram, #channel, date)
+- [Source 2: brief description] (Gmail, from person, date)
+- [Source 3: brief description] (Local macOS + Google Drive + Firebase storage, doc name, last modified)
 ```
 
 **For exploratory queries ("what do we know about X"):**
@@ -120,9 +120,9 @@ Sources:
 [Synthesized summary combining information from all sources]
 
 Found across:
-- ~~chat: X relevant messages in Y channels
-- ~~email: X relevant threads
-- ~~cloud storage: X related documents
+- Telegram: X relevant messages in Y channels
+- Gmail: X relevant threads
+- Local macOS + Google Drive + Firebase storage: X related documents
 - [Other sources as applicable]
 
 Key sources:
