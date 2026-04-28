@@ -182,11 +182,16 @@ alpen_extensions:
     - Consulting firms wanting to productize agent-ops
     - SMBs without internal AI teams needing platform + config
 
-  # ── Vault paths ──
-  alpen-vault-path:        "~/Documents/Obsidian-Vault"
+  # ── Vault paths (per feedback_alpen_storage_patterns.md) ──
+  alpen-vault-path:        "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/PHoward"
   alpen-state-dir:         "~/.local/state/alpen"
+  alpen-indices-dir:       "~/.local/state/alpen/indices"
+  alpen-sqlite-dir:        "~/.local/state/alpen/sqlite"
+  alpen-rag-db:            "~/Winnie/data/rag.db"
   alpen-log-dir:           "~/Winnie/logs"
   alpen-fork-repo:         "~/Winnie/alpen-platform"
+  alpen-backup-dir:        "~/Library/Mobile Documents/com~apple~CloudDocs/HFO/backups"
+  alpen-sync-excluded:     "*.db, *.db-wal, *.db-shm (use .nosync extension for files in vault folder)"
 
   # ── Telemetry ──
   alpen-telemetry-ledger:          "~/Winnie/logs/invocations.jsonl"
