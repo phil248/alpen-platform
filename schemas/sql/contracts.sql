@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS contract (
   -- file metadata
   vault_path        TEXT NOT NULL,                 -- relative path to source markdown
   pdf_path          TEXT,                          -- relative path to executed PDF (if signed)
+  -- billing details (used by compose-invoice.py; populated from contract markdown frontmatter)
+  bill_to_address   TEXT,                          -- multi-line address for invoice header
+  bill_to_attention TEXT,                          -- "Attn: AP Department" line
+  bill_to_email     TEXT,                          -- where invoice emails go
+  billing_account   TEXT,                          -- google-workspace token label (e.g., 'ccg-phil')
+  billing_payment_info TEXT,                       -- multi-line payment instructions on PDF
+  billing_notes     TEXT,                          -- additional notes block on PDF
+  reminder_days_before TEXT,                       -- '7' or 'NULL' to disable; calendar event days before due
   created_at        DATETIME NOT NULL DEFAULT (datetime('now')),
   updated_at        DATETIME NOT NULL DEFAULT (datetime('now')),
   CHECK (contract_type IN ('MSA', 'SOW', 'NDA', 'LOI', 'AMENDMENT', 'OTHER')),

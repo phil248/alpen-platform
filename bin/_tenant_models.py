@@ -145,6 +145,15 @@ class EntitySignatory(BaseModel):
     default: bool = False
 
 
+class EntityBilling(BaseModel):
+    """Billing-side entity config used by compose-invoice.py for PDF
+    rendering, Gmail draft routing, and Calendar reminder source."""
+    tax_id: str | None = None
+    email: str | None = None                    # "Questions about this invoice" footer
+    default_account: str | None = None          # google-workspace token label (e.g., 'ccg-phil')
+    pdf_accent_color: str | None = "#2E5F8A"    # hex; brand color for PDF accents
+
+
 class Entity(BaseModel):
     id: str
     display_name: str
@@ -163,6 +172,7 @@ class Entity(BaseModel):
     address: str | None = None                  # physical office address for contracts
     venue_city: str | None = None               # city for jurisdiction clause (e.g., "Cincinnati, OH")
     services_description: str | None = None     # WHEREAS clause description (e.g., "consulting and professional services")
+    billing: EntityBilling | None = None
     signatories: list[EntitySignatory] = Field(default_factory=list)
 
     @model_validator(mode="after")

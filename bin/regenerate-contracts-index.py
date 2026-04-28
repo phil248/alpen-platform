@@ -70,8 +70,11 @@ def insert_contract(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: P
               effective_date, termination_date, total_value, governing_law,
               drafted_at, sent_at, signed_us_at, signed_them_at, executed_at,
               terminated_at, termination_reason,
-              lead_id, engagement_id, vault_path, pdf_path
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              lead_id, engagement_id, vault_path, pdf_path,
+              bill_to_address, bill_to_attention, bill_to_email,
+              billing_account, billing_payment_info, billing_notes,
+              reminder_days_before
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             rec.slug,
             tenant_id,
@@ -98,6 +101,13 @@ def insert_contract(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: P
             coerce_str(fm.get("engagement_id")),
             vault_path,
             coerce_str(fm.get("pdf_path")),
+            coerce_str(fm.get("bill_to_address")),
+            coerce_str(fm.get("bill_to_attention")),
+            coerce_str(fm.get("bill_to_email")),
+            coerce_str(fm.get("billing_account")),
+            coerce_str(fm.get("billing_payment_info")),
+            coerce_str(fm.get("billing_notes")),
+            coerce_str(fm.get("reminder_days_before")),
         ))
     except sqlite3.IntegrityError as e:
         print(f"  ! integrity error inserting {rec.slug}: {e}", file=sys.stderr)
