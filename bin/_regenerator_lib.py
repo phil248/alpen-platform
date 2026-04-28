@@ -33,8 +33,37 @@ import yaml
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
 SCHEMAS_DIR = PLATFORM_ROOT / "schemas" / "sql"
-SQLITE_DIR = Path(os.path.expanduser("~/.local/state/alpen/sqlite"))
+DEFAULT_SQLITE_DIR = Path(os.path.expanduser("~/.local/state/alpen/sqlite"))
 HFO_LOG = Path(os.path.expanduser("~/Winnie/bin/hfo-log"))
+
+
+def tenant_state_dir(tenant_id: str | None) -> Path:
+    """Resolve the SQLite state directory for a given tenant.
+
+    Reads tenants/<id>/config.yaml for `tenant.state_dir`; appends '/sqlite'.
+    Falls back to ~/.local/state/alpen/sqlite/ when:
+      - tenant_id is None
+      - tenant config doesn't exist
+      - state_dir field absent
+
+    This is the multi-tenant safety net: running regenerator with
+    --tenant <other> resolves to <other>'s state dir, NOT the default
+    shared one. Prevents data pollution across tenants on the same host.
+    """
+    if not tenant_id:
+        return DEFAULT_SQLITE_DIR
+    cfg_path = PLATFORM_ROOT / "tenants" / tenant_id / "config.yaml"
+    if not cfg_path.is_file():
+        return DEFAULT_SQLITE_DIR
+    try:
+        with cfg_path.open() as f:
+            cfg = yaml.safe_load(f) or {}
+        sd = (cfg.get("tenant") or {}).get("state_dir")
+        if not sd:
+            return DEFAULT_SQLITE_DIR
+        return Path(os.path.expanduser(sd)) / "sqlite"
+    except Exception:
+        return DEFAULT_SQLITE_DIR
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -92,16 +121,22 @@ def find_records(source_dir: Path) -> list[ParsedRecord]:
 # DB initialization
 # ──────────────────────────────────────────────────────────────────────────────
 
-def init_db(name: str) -> Path:
-    """Drop + recreate the SQLite DB at ~/.local/state/alpen/sqlite/<name>.db
-    from the schema at schemas/sql/<name>.sql. Returns the DB path."""
-    SQLITE_DIR.mkdir(parents=True, exist_ok=True)
-    db_path = SQLITE_DIR / f"{name}.db"
+def init_db(name: str, tenant_id: str | None = None) -> Path:
+    """Drop + recreate the SQLite DB at <tenant.state_dir>/sqlite/<name>.db.
+
+    If tenant_id is provided, resolves the state dir from tenant config.
+    Falls back to ~/.local/state/alpen/sqlite/ when no tenant given. This
+    is the multi-tenant safety net — see tenant_state_dir() above.
+
+    Schema source: schemas/sql/<name>.sql.
+    Returns the DB path."""
+    sqlite_dir = tenant_state_dir(tenant_id)
+    sqlite_dir.mkdir(parents=True, exist_ok=True)
+    db_path = sqlite_dir / f"{name}.db"
     schema_path = SCHEMAS_DIR / f"{name}.sql"
     if not schema_path.is_file():
         sys.exit(f"error: schema not found at {schema_path}")
     if db_path.exists():
-        # Backup the existing DB to .prev before rebuild
         backup = db_path.with_suffix(".db.prev")
         shutil.copy2(db_path, backup)
         db_path.unlink()

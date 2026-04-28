@@ -193,7 +193,7 @@ def main() -> int:
     print(f"source: {source_dir}")
     print()
 
-    db_path = init_db("leads")
+    db_path = init_db("leads", tenant_id=args.tenant)
     records = find_records(source_dir)
     run.records_seen = len(records)
     if not records:
