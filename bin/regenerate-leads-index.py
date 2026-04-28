@@ -118,8 +118,9 @@ def insert_lead(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: Path)
               primary_contact, contact_email, source, source_detail, stage,
               tier, value_estimate, value_low, value_high, probability,
               owner, next_action, next_action_due, next_action_owner,
-              stage_entered_date, vault_path
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              stage_entered_date, closed_at, close_reason,
+              contract_id, engagement_id, vault_path
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             rec.slug,
             tenant_id,
@@ -141,6 +142,10 @@ def insert_lead(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: Path)
             coerce_date(fm.get("next_action_due")),
             coerce_str(fm.get("next_action_owner")),
             coerce_date(fm.get("stage_entered_date")) or "2026-01-01",
+            coerce_date(fm.get("closed_at")),
+            coerce_str(fm.get("close_reason")),
+            coerce_str(fm.get("contract_id")),
+            coerce_str(fm.get("engagement_id")),
             vault_path,
         ))
     except sqlite3.IntegrityError as e:
