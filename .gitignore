@@ -1,1 +1,7 @@
+
+.playwright-mcp/
 .venv/
+**/.venv/
+/alpen-platform/
+# Alpen Platform fork — separate repo (phil248/alpen-platform -> anthropics/knowledge-work-plugins)
+# Playwright MCP scratch (web research artifacts)
