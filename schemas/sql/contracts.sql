@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS contract (
   billing_payment_info TEXT,                       -- multi-line payment instructions on PDF
   billing_notes     TEXT,                          -- additional notes block on PDF
   reminder_days_before TEXT,                       -- '7' or 'NULL' to disable; calendar event days before due
+  -- hourly billing config (only used when billing_mode = 'hourly')
+  billing_mode      TEXT NOT NULL DEFAULT 'milestone',  -- 'milestone' | 'hourly' | 'subscription'
+  hourly_rate       INTEGER,                            -- USD/hr (whole dollars)
+  billing_calendar_account TEXT,                        -- google-workspace token for calendar (often = billing_account)
+  billing_client_domains TEXT,                          -- comma-separated; events with attendee in these domains are billable IF Phil accepted
+  billing_client_emails TEXT,                           -- comma-separated; explicit emails (additional to domain match)
+  billing_work_block_pattern TEXT,                      -- title pattern marking solo billable focus blocks (e.g., 'InnoSync')
+  billing_period_days INTEGER NOT NULL DEFAULT 30,      -- default billing window
+  billing_round_to_minutes INTEGER NOT NULL DEFAULT 15, -- round each event duration up to this granularity
   created_at        DATETIME NOT NULL DEFAULT (datetime('now')),
   updated_at        DATETIME NOT NULL DEFAULT (datetime('now')),
   CHECK (contract_type IN ('MSA', 'SOW', 'NDA', 'LOI', 'AMENDMENT', 'OTHER')),

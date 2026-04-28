@@ -58,6 +58,16 @@ def type_normalize(t: str | None) -> str:
     return "OTHER"
 
 
+def _coerce_csv_list(raw) -> str | None:
+    """YAML list -> 'a,b,c' string. Pass-through if already string. None if empty."""
+    if raw is None:
+        return None
+    if isinstance(raw, list):
+        return ",".join(str(x).strip() for x in raw if str(x).strip()) or None
+    s = str(raw).strip()
+    return s or None
+
+
 def insert_contract(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: Path) -> bool:
     fm = rec.fm
     vault_path = str(rec.path.relative_to(source_dir.parent.parent)) if source_dir.parent.parent in rec.path.parents else str(rec.path)
@@ -73,8 +83,12 @@ def insert_contract(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: P
               lead_id, engagement_id, vault_path, pdf_path,
               bill_to_address, bill_to_attention, bill_to_email,
               billing_account, billing_payment_info, billing_notes,
-              reminder_days_before
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              reminder_days_before,
+              billing_mode, hourly_rate, billing_calendar_account,
+              billing_client_domains, billing_client_emails,
+              billing_work_block_pattern, billing_period_days,
+              billing_round_to_minutes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             rec.slug,
             tenant_id,
@@ -108,6 +122,14 @@ def insert_contract(conn: sqlite3.Connection, rec, tenant_id: str, source_dir: P
             coerce_str(fm.get("billing_payment_info")),
             coerce_str(fm.get("billing_notes")),
             coerce_str(fm.get("reminder_days_before")),
+            coerce_str(fm.get("billing_mode")) or "milestone",
+            coerce_int(fm.get("hourly_rate")),
+            coerce_str(fm.get("billing_calendar_account")),
+            _coerce_csv_list(fm.get("billing_client_domains")),
+            _coerce_csv_list(fm.get("billing_client_emails")),
+            coerce_str(fm.get("billing_work_block_pattern")),
+            coerce_int(fm.get("billing_period_days")) or 30,
+            coerce_int(fm.get("billing_round_to_minutes")) or 15,
         ))
     except sqlite3.IntegrityError as e:
         print(f"  ! integrity error inserting {rec.slug}: {e}", file=sys.stderr)
