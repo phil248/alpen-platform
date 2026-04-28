@@ -41,6 +41,12 @@ entities:
     type: brain-health-consulting
     domain: cognitivecapitalgroup.com
     public: true
+    legal_name: "Cognitive Capital Group LLC"
+    state_of_organization: "Ohio"
+    entity_descriptor: "an Ohio limited liability company"
+    address: "7124 Summit Ave, Madeira OH 45243"
+    venue_city: "Cincinnati, OH"
+    services_description: "brain health and workplace wellbeing consulting services"
     icp:
       titles:
         - Chief People Officer
@@ -68,6 +74,12 @@ entities:
     type: ai-consulting
     domain: alpentech.ai
     public: true
+    legal_name: "AlpenTech LLC"
+    state_of_organization: "Ohio"
+    entity_descriptor: "an Ohio limited liability company"
+    address: "7124 Summit Ave, Madeira OH 45243"
+    venue_city: "Cincinnati, OH"
+    services_description: "AI consulting, agent operations, and analytical services"
     icp:
       titles:
         - CTO

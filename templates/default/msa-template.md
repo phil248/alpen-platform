@@ -1,127 +1,110 @@
 <!--
 TEMPLATE: msa-template
 USE: master agreement under which one or more SOWs can be issued
-APPLIES: tier 2 and tier 3 engagements; tier 1 typically uses a simpler service order
+APPLIES: Tier 2 and Tier 3 engagements; Tier 1 typically uses a simpler service order
 VOICE: legal register; precision over warmth; no em/en dashes per universal rules
-NOTE: this template is a STARTING POINT, not legal advice. Have it reviewed by counsel
-      before first use, and re-reviewed any time material clauses change.
+NOTE: starting point, NOT legal advice. Have it reviewed by counsel before first use,
+      and re-reviewed any time material clauses change.
+
+Roles:
+  Service Provider = the entity issuing this MSA (one of OUR entities - CCG or Alpen Tech)
+  Client           = the engaging counterparty
+
+Source: adapted from the InnoSync AlpenTech MSA executed 2026-04-25, with InnoSync's
+      role replaced by the parameterized Client role and AlpenTech's role replaced by
+      whichever of our entities is contracting (resolved via {{entity.*}}).
+
+Section numbering corrected from the source (which had two `11`s and skipped `6`).
 -->
 
-# Master Services Agreement
+# CONSULTING AND PROFESSIONAL SERVICES
+# MASTER SERVICES AGREEMENT
 
-**This Master Services Agreement** ("Agreement") is entered into as of {{today}} ("Effective Date") by and between:
+This Master Services Agreement (this "Agreement") is effectively dated as of {{deal.effective_date}} (the "Effective Date") by and between {{deal.client_legal_name}}, {{deal.client_entity_descriptor}} with offices at {{deal.client_address}} ("Client"), and {{entity.legal_name}}, {{entity.entity_descriptor}} with offices at {{entity.address}} ("Service Provider").
 
-**{{deal.contracting_entity}}**, a {{deal.contracting_entity_form}} organized under the laws of {{deal.contracting_entity_state}}, with its principal place of business at {{tenant.business_address}} ("Service Provider"),
+WHEREAS, the Service Provider is in the business of {{entity.services_description}} and deliverables associated therewith ("Services"), and Client may want to engage the Service Provider from time to time to provide some or all of such Services.
 
-and
-
-**{{deal.client_name}}**, a {{deal.client_entity_form}} organized under the laws of {{deal.client_entity_state}}, with its principal place of business at {{deal.client_address}} ("Client").
-
-Service Provider and Client are each a "Party" and collectively the "Parties."
-
----
+NOW, THEREFORE, in consideration of the foregoing and the mutual promises, covenants and agreements set forth below, and for other good and valuable consideration, the receipt and sufficiency of which the parties hereby acknowledge, the parties agree as follows:
 
 ## 1. Services
 
-1.1 Service Provider will provide professional services ("Services") to Client as described in one or more Statements of Work ("SOWs") executed by both Parties under this Agreement. Each SOW will reference this Agreement and will, upon execution, be incorporated by reference herein.
+Service Provider shall provide Services to the Client as described on one or more Statements of Work signed by Service Provider and Client that reference this Agreement ("SOW" or "Statement of Work"). Service Provider shall perform Services in a prompt manner and have the final products or services ("Deliverable") ready for Client no later than the due date specified in the applicable SOW ("Completion Date"). This due date is subject to change in accordance with the Change Order process defined in the applicable SOW. Client shall assist Service Provider by promptly providing all information requests known or available and relevant to the Services in a timely manner.
 
-1.2 If a conflict arises between this Agreement and an SOW, the SOW will control as to that engagement only.
+## 2. Contract Price
 
-## 2. Fees and payment
+For performance of the Services and rendering the Deliverable, Client shall pay to Service Provider all fees due under the applicable SOW. No other payments or benefits are included in this Agreement.
 
-2.1 Client will pay Service Provider the fees set forth in each SOW. Unless otherwise specified in the SOW, fees are payable in U.S. dollars within 30 days of invoice receipt.
+## 3. Dates of Performance
 
-2.2 Late payments accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law.
+Service Provider will begin performing services upon receipt of signed Agreement. Unless terminated as provided in this Agreement, Service Provider will complete Services by the Completion Date.
 
-2.3 Client is responsible for all sales, use, and similar taxes imposed in connection with Services, excluding taxes on Service Provider's net income.
+## 4. Change in Services
 
-2.4 Travel and out-of-pocket expenses are billed at actual cost, with prior written approval for any single expense exceeding $500.
+If Client desires changes to the SOW, Client shall submit to Service Provider a written request in accordance with the change order process defined in the applicable SOW. The parties may execute additional Statements of Work describing Services, which will become part of this Agreement upon execution by Service Provider and Client.
 
-## 3. Term and termination
+## 5. Termination
 
-3.1 This Agreement begins on the Effective Date and continues until terminated as provided herein. Each SOW has its own term as specified in the SOW.
+Client or the Service Provider shall have the right to modify, reject, or terminate any SOW and any related work in process with thirty days written notice to the other. In the event Client terminates the SOW prior to completion of Services, Client shall pay the Service Provider the fees due under the SOW with respect to Services completed as of the date of termination.
 
-3.2 Either Party may terminate this Agreement or any SOW for material breach by the other Party that remains uncured 30 days after written notice.
+## 6. Payment of Services
 
-3.3 Either Party may terminate any SOW for convenience on 30 days' written notice. Upon convenience termination, Client will pay for all Services rendered through the termination date plus any non-cancellable commitments.
+In exchange for Service Provider's Services under this Agreement, Client shall pay Service Provider the contract price set forth in the SOW. Service Provider will submit invoices to Client for all services rendered by the Services Completion Date and Client shall pay within thirty days. Client shall pay travel and other expenses incurred by Service Provider in performing the Services, up to the maximum amount agreed in the SOW.
 
-3.4 Sections 4 (Intellectual Property), 5 (Confidentiality), 6 (Indemnification), 7 (Limitation of Liability), and any other provisions that by their nature should survive will survive termination.
+## 7. Representations and Warranties
 
-## 4. Intellectual property
+### 7.1 Client's Representation
 
-4.1 **Client materials.** Materials Client provides to Service Provider remain Client's property.
+Client represents that any materials used in the Deliverable will not knowingly (a) infringe on the intellectual property rights of any third party or any rights of publicity or privacy, or (b) violate any law, statute, ordinance or regulation.
 
-4.2 **Service Provider materials.** Tools, frameworks, methodologies, and pre-existing intellectual property used by Service Provider in delivering the Services ("Service Provider Materials") remain Service Provider's property. Client receives a non-exclusive, perpetual, royalty-free license to use Service Provider Materials embedded in deliverables for Client's internal business purposes.
+### 7.2 Service Provider's Representation
 
-4.3 **Deliverables.** Subject to payment in full of all fees due under the relevant SOW, Service Provider grants Client a non-exclusive, perpetual, royalty-free, worldwide license to use, modify, and distribute (within Client's organization) the deliverables specified in the SOW.
+Service Provider represents that any materials provided to Client by the Service Provider for incorporation into the Deliverable will not (a) infringe on the intellectual property rights of any third party or any rights of publicity or privacy, or (b) violate any law, statute, ordinance or regulation.
 
-4.4 **Residual rights.** Service Provider retains the right to use general knowledge, skills, and experience acquired during the Services for other engagements.
+### 7.3 Warranty Disclaimer
 
-## 5. Confidentiality
+EXCEPT FOR THE WARRANTIES SET FORTH IN THIS AGREEMENT AND ANY SOW, EACH PARTY EXPRESSLY DISCLAIMS ANY AND ALL OTHER WARRANTIES OF ANY KIND OR NATURE, WHETHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-5.1 Each Party will hold the other Party's Confidential Information in strict confidence and will not disclose it to any third party without the disclosing Party's prior written consent, except as required by law.
+## 8. Ownership of Deliverables
 
-5.2 "Confidential Information" means non-public information disclosed by one Party to the other that is identified as confidential or that a reasonable person would consider confidential under the circumstances.
+"Intellectual Property Rights" means any and all (a) rights associated with works of authorship, including but not limited to copyrights, (b) trademark and trade name rights and similar rights, (c) trade secret rights, (d) patents, and (e) all other intellectual property rights in any jurisdiction throughout the world. To the fullest extent permitted by law, Client retains ownership in all Intellectual Property rights of the Deliverable. Further, Client retains all ownership and Intellectual Property Rights to images, computer code, software, and other components comprising the Deliverable for its future use. If termination occurs under Section 5, Client shall retain ownership in all Intellectual Property Rights and to images, computer code, and software and other components comprising the work in process up to the date of termination.
 
-5.3 Confidentiality obligations survive termination of this Agreement for a period of 3 years.
+## 9. Non-Circumvention
 
-## 6. Indemnification
+Service Provider will not provide any services to any Client client, either directly or indirectly, of the same or similar nature as the services being provided by the Service Provider with respect to any Project for the Client client. The Service Provider may not encourage, negotiate with, or solicit any Client client to hire the Service Provider to provide the Client services to that Client client, except with the express written consent of Client. The restrictions of this Section 9 will apply during the Term and during the period that is two (2) years following the termination or expiry of the most recent SOW. For Client clients where the Service Provider has a pre-existing business relationship (has an approved and active MSA or equivalent), this clause shall not apply.
 
-6.1 Service Provider will indemnify Client against third-party claims arising from Service Provider's gross negligence or willful misconduct in performing the Services.
+## 10. Indemnification
 
-6.2 Client will indemnify Service Provider against third-party claims arising from Client's use of deliverables in a manner not contemplated by the relevant SOW or in violation of applicable law.
+Service Provider will defend, indemnify and hold Client harmless from any and all claims, losses, liabilities, damages, expenses and costs (including attorneys' fees and court costs) arising from or relating to any claims regarding elements or materials provided by Service Provider and incorporated into the Deliverable.
 
-## 7. Limitation of liability
+## 11. Limitation of Liability
 
-7.1 EXCEPT FOR BREACHES OF CONFIDENTIALITY, INDEMNIFICATION OBLIGATIONS, AND VIOLATIONS OF INTELLECTUAL PROPERTY RIGHTS, NEITHER PARTY WILL BE LIABLE TO THE OTHER FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES.
+CLIENT WILL NOT BE LIABLE FOR ANY LOSS OF USE, INTERRUPTION OF BUSINESS, LOST PROFITS, OR ANY INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY KIND REGARDLESS OF THE FORM OF ACTION WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT PRODUCT LIABILITY, OR OTHERWISE, EVEN IF IT HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. IN NO EVENT SHALL CLIENT'S AGGREGATE LIABILITY UNDER THIS AGREEMENT EXCEED THE FEES PAID TO SERVICE PROVIDER HEREUNDER.
 
-7.2 EXCEPT AS NOTED IN 7.1, EACH PARTY'S TOTAL LIABILITY UNDER THIS AGREEMENT WILL NOT EXCEED THE FEES PAID BY CLIENT UNDER THE RELEVANT SOW IN THE 12 MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM.
+## 12. Compliance with Laws
 
-## 8. Independent contractor
+Each party shall perform all of its obligations under this Agreement in compliance at all times with all foreign, federal, state and local statutes, orders and regulations, including those relating to privacy and data protection.
 
-The Parties are independent contractors. Nothing in this Agreement creates a partnership, joint venture, or employer-employee relationship.
+## 13. General
 
-## 9. Assignment
+Neither party may assign this Agreement without the prior written consent of the other party and any attempt to do so will be void. Any notice or consent under this Agreement will be in writing to the address specified below. If any provision of this Agreement is adjudged by any court of competent jurisdiction to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary so that this Agreement will otherwise remain in full force and effect. Any waivers or amendments shall be effective only if made in writing signed by a representative of the respective parties. Both parties agree that this Agreement is the complete and exclusive statement of the mutual understanding of the parties, and supersedes and cancels all previous written and oral agreements and communications relating to the subject matter of this Agreement. Both parties agree that the Agreement is signed by a duly authorized company representative authorized to bind the company to its terms and services and no consent from any third party is required.
 
-Neither Party may assign this Agreement without the other Party's prior written consent, except that either Party may assign this Agreement to a successor in connection with a merger, acquisition, or sale of substantially all assets.
+## 14. Choice of Law
 
-## 10. Governing law and dispute resolution
+This Agreement will be deemed to have been made in, and shall be construed pursuant to the laws of the State of {{entity.state_of_organization}} and the United States without regard to conflicts of laws provisions thereof. Any suit or proceeding arising out of or relating to this Agreement shall be commenced in a federal or state court in {{entity.venue_city}} and each party irrevocably submits to the jurisdiction and venue of such courts.
 
-10.1 This Agreement is governed by the laws of {{deal.governing_law}} without regard to conflict-of-laws principles.
+## 15. Remedies
 
-10.2 The Parties will first attempt to resolve any dispute through good-faith negotiation. If unresolved within 30 days, the dispute will be submitted to binding arbitration under the American Arbitration Association's Commercial Arbitration Rules, in {{deal.arbitration_venue}}.
-
-## 11. Entire agreement
-
-This Agreement, together with any executed SOWs, constitutes the entire agreement between the Parties regarding its subject matter and supersedes all prior agreements, communications, or understandings, written or oral.
-
-## 12. Notices
-
-All notices under this Agreement must be in writing and will be deemed delivered when sent by email with confirmation of receipt to the addresses below or to such other addresses as the Parties designate in writing.
-
-For Service Provider: {{tenant.principal_name}}, {{tenant.principal_email}}
-For Client: {{deal.client_signatory_name}}, {{deal.client_signatory_email}}
+Client reserves all remedies available at law or equity for any disputes that arise under this Agreement. In the event of a suit or proceeding under this Agreement, Service Provider agrees to pay all attorneys' fees if the federal or state court renders judgment substantially in Client's favor.
 
 ---
 
-**IN WITNESS WHEREOF**, the Parties have executed this Master Services Agreement as of the Effective Date.
+Accepted and agreed to as of the Effective Date by the authorized representative of each party:
 
-**{{deal.contracting_entity}}**
-
-Signature: __________________________________________
-
-Name: {{tenant.principal_name}}
-
-Title: {{tenant.principal_title}}
-
-Date: _______________________________________________
-
-**{{deal.client_name}}**
-
-Signature: __________________________________________
-
-Name: {{deal.client_signatory_name}}
-
-Title: {{deal.client_signatory_title}}
-
-Date: _______________________________________________
+| {{deal.client_legal_name}} | {{entity.legal_name}} |
+|---|---|
+| Signature: | Signature: |
+| Print Name: {{deal.client_signatory_name}} | Print Name: {{tenant.principal_name}} |
+| Print Title: {{deal.client_signatory_title}} | Print Title: {{tenant.principal_title}} |
+| Date: | Date: |
+| Address: {{deal.client_address}} | Address: {{entity.address}} |
+| Email: {{deal.client_signatory_email}} | Email: {{tenant.principal_email}} |

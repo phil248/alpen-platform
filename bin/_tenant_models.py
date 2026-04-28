@@ -147,6 +147,14 @@ class Entity(BaseModel):
     tiers: list[Tier] = Field(default_factory=list)
     brand: Brand | None = None
     templates_dir: str | None = None
+    # Legal info — populated for entities that issue contracts. Optional so
+    # non-contracting entities (e.g., HFO) can omit.
+    legal_name: str | None = None
+    state_of_organization: str | None = None
+    entity_descriptor: str | None = None       # e.g., "an Ohio limited liability company"
+    address: str | None = None                  # physical office address for contracts
+    venue_city: str | None = None               # city for jurisdiction clause (e.g., "Cincinnati, OH")
+    services_description: str | None = None     # WHEREAS clause description (e.g., "consulting and professional services")
 
 
 class DepartmentConfig(BaseModel):
