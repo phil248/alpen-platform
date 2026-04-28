@@ -70,11 +70,11 @@ See the **system-design** skill for detailed frameworks on requirements gatherin
 
 ## If Connectors Available
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Search for prior ADRs and design docs
 - Find relevant technical context
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Link to related epics and tickets
 - Create implementation tasks
 

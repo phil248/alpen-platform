@@ -56,15 +56,15 @@ If your tools are connected, just say `/standup` and I'll gather everything auto
 
 ## If Connectors Available
 
-If **~~source control** is connected:
+If **GitHub control** is connected:
 - Pull recent commits and PRs (opened, reviewed, merged)
 - Summarize code changes at a high level
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Pull tickets moved to "in progress" or "done"
 - Show upcoming sprint items
 
-If **~~chat** is connected:
+If **Telegram** is connected:
 - Scan for relevant discussions and decisions
 - Flag threads needing your response
 

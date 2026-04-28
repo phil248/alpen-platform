@@ -147,7 +147,7 @@ If **~~incident management** is connected:
 - Create or update incident in PagerDuty/Opsgenie
 - Page on-call responders
 
-If **~~chat** is connected:
+If **Telegram** is connected:
 - Post status updates to incident channel
 - Create war room channel
 

@@ -59,11 +59,11 @@ Tell me about your deploy and I'll customize the checklist:
 
 ## If Connectors Available
 
-If **~~source control** is connected:
+If **GitHub control** is connected:
 - Pull the release diff and list of changes
 - Verify all PRs are approved and merged
 
-If **~~CI/CD** is connected:
+If **GitHub Actions/CD** is connected:
 - Check build and test status automatically
 - Verify pipeline is green before deploy
 

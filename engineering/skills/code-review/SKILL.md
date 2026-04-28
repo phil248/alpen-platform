@@ -100,15 +100,15 @@ If no specific file or URL is provided, ask what to review.
 
 ## If Connectors Available
 
-If **~~source control** is connected:
+If **GitHub control** is connected:
 - Pull the PR diff automatically from the URL
 - Check CI status and test results
 
-If **~~project tracker** is connected:
+If **Markdown + GitHub Issues tracker** is connected:
 - Link findings to related tickets
 - Verify the PR addresses the stated requirements
 
-If **~~knowledge base** is connected:
+If **Obsidian + sqlite-vec RAG base** is connected:
 - Check changes against team coding standards and style guides
 
 ## Tips
