@@ -335,6 +335,22 @@
       "author": {
         "name": "Alpen Tech"
       }
+    },
+    {
+      "name": "alpen-investments",
+      "source": "./alpen-investments",
+      "description": "Family-office CIO — portfolio tracking, manager DD, transaction logging, market watch, statement extraction. HFO-only by default.",
+      "author": {
+        "name": "Alpen Tech"
+      }
+    },
+    {
+      "name": "alpen-opsec",
+      "source": "./alpen-opsec",
+      "description": "Operational security — breach monitor, password hygiene, digital-footprint scanner, MCP key rotator. For solo principals + family offices.",
+      "author": {
+        "name": "Alpen Tech"
+      }
     }
   ]
 }

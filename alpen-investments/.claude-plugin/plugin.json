@@ -1,0 +1,8 @@
+{
+  "name": "alpen-investments",
+  "version": "0.1.0",
+  "description": "Family-office Chief Investment Officer (CIO) capability — portfolio tracking, manager due diligence, transaction logging, market watch, statement extraction. Net-new plugin (no equivalent in anthropics/knowledge-work-plugins). Family-office-only by default; gated by tenant config.",
+  "author": {
+    "name": "Alpen Tech"
+  }
+}

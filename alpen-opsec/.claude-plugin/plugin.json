@@ -1,0 +1,8 @@
+{
+  "name": "alpen-opsec",
+  "version": "0.1.0",
+  "description": "Operational security capability — breach monitoring, password hygiene, digital footprint scanning, MCP key rotation. Net-new plugin (no equivalent in anthropics/knowledge-work-plugins). For solo principals + family offices managing significant private digital surface area.",
+  "author": {
+    "name": "Alpen Tech"
+  }
+}
