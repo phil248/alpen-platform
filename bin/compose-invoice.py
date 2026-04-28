@@ -206,7 +206,8 @@ def gw_service(account: str, api: str):
             creds.refresh(Request())
         else:
             return None
-    return build(api, "v1" if api == "gmail" else "v3",
+    api_versions = {"gmail": "v1", "calendar": "v3", "tasks": "v1", "drive": "v3"}
+    return build(api, api_versions.get(api, "v1"),
                   credentials=creds, cache_discovery=False)
 
 
@@ -233,6 +234,28 @@ def create_gmail_draft(account: str, to: str, subject: str, body: str,
         return result.get("id")
     except Exception as e:
         print(f"  ! gmail draft failed for {account}: {e}", file=sys.stderr)
+        return None
+
+
+def create_google_task(account: str, title: str, notes: str, due: date) -> str | None:
+    """Create a Google Tasks entry on the account's @default list.
+
+    Default routing: personal-phil ('howardpm1') per HFO-task-review pattern,
+    so all of Phil's todos surface in one place and the daily-standup picks
+    them up via the Tasks index. Override via the `account` parameter."""
+    svc = gw_service(account, "tasks")
+    if svc is None:
+        return None
+    body = {
+        "title": title,
+        "notes": notes,
+        "due": datetime.combine(due, datetime.min.time()).strftime("%Y-%m-%dT00:00:00Z"),
+    }
+    try:
+        result = svc.tasks().insert(tasklist="@default", body=body).execute()
+        return result.get("id")
+    except Exception as e:
+        print(f"  ! google task failed for {account}: {e}", file=sys.stderr)
         return None
 
 
@@ -518,6 +541,23 @@ def _hourly_synthesize_payment(contract: dict, args) -> list[dict]:
     amount = round(hours * contract["hourly_rate"])
     print(f"  hourly compute: {total_minutes} min ({hours:.2f} hr) @ ${contract['hourly_rate']:,}/hr = ${amount:,}")
 
+    if args.dry_run:
+        # Return a synthetic dict matching the contract_payment shape so the
+        # rest of the pipeline can render the preview without touching the DB.
+        return [{
+            "id": -1,
+            "contract_id": contract["id"],
+            "milestone": milestone_label,
+            "amount": amount,
+            "due_trigger": f"hourly:{hours:.2f}h@${contract['hourly_rate']}/hr",
+            "due_date": (end_d + timedelta(days=30)).isoformat(),
+            "invoice_id": None,
+            "invoiced_at": None,
+            "paid_at": None,
+            "paid_amount": None,
+            "notes": None,
+        }]
+
     # Insert a fresh contract_payment row representing the billed window
     conn = sqlite3.connect(CONTRACTS_DB)
     cur = conn.execute("""
@@ -561,6 +601,10 @@ def main() -> int:
     parser.add_argument("--no-pdf", action="store_true")
     parser.add_argument("--no-gmail-draft", action="store_true")
     parser.add_argument("--no-calendar-reminder", action="store_true")
+    parser.add_argument("--no-task", action="store_true",
+                        help="Skip creating a 'review and send' Google Task on personal-phil")
+    parser.add_argument("--task-account", default="personal-phil",
+                        help="Google account whose Tasks list gets the review task (default: personal-phil)")
     parser.add_argument("--invoice-date", help="ISO YYYY-MM-DD; default today")
     parser.add_argument("--due-days", type=int, default=30)
     parser.add_argument("--payment-terms", default="Net 30")
@@ -649,6 +693,7 @@ def main() -> int:
     pdf_count = 0
     draft_count = 0
     reminder_count = 0
+    task_count = 0
     nte_exceeded_count = 0
     failures: list[str] = []
     # In dry-run, mark_invoiced never commits, so next_invoice_number would
@@ -806,6 +851,29 @@ def main() -> int:
             else:
                 failures.append(f"{invoice_number}:reminder")
 
+        # Google Task: "Review and send invoice X to Y" — due today by default
+        # so it appears in the morning standup's tasks-due-today section.
+        if not args.no_task:
+            client_short = first_nonempty_line(contract.get("bill_to_address")) or contract["contracting_entity_them"]
+            task_title = f"Review and send invoice {invoice_number} to {client_short} (${p['amount']:,})"
+            nte_tag = "\n\nNTE FLAG: see invoice notes." if nte_warning else ""
+            task_notes = (
+                f"Contract: {contract['display_name']} ({contract['id']})\n"
+                f"Invoice: {invoice_number}\n"
+                f"Amount: ${p['amount']:,}\n"
+                f"Due: {due_date.strftime('%B %d, %Y')}\n"
+                f"PDF: {pdf_path.relative_to(vault) if pdf_path else 'not generated'}\n"
+                f"Markdown: {md_path.relative_to(vault)}\n"
+                f"Send from: {account}\n"
+                f"Open Gmail Drafts and search '{invoice_number}'."
+                f"{nte_tag}"
+            )
+            task_id = create_google_task(args.task_account, task_title, task_notes, due=today)
+            if task_id:
+                task_count += 1
+            else:
+                failures.append(f"{invoice_number}:task")
+
         # Mark DB
         mark_invoiced(p["id"], invoice_number, invoiced_at_iso)
         issued_count += 1
@@ -815,6 +883,7 @@ def main() -> int:
     print(f"pdfs:      {pdf_count}")
     print(f"drafts:    {draft_count}")
     print(f"reminders: {reminder_count}")
+    print(f"tasks:     {task_count}")
     if nte_exceeded_count:
         print(f"NTE flag:  {nte_exceeded_count} invoice(s) tagged as exceeding contract cap")
     if failures:
@@ -827,6 +896,7 @@ def main() -> int:
                    pdfs_generated=pdf_count,
                    gmail_drafts=draft_count,
                    calendar_reminders=reminder_count,
+                   tasks_created=task_count,
                    nte_exceeded=nte_exceeded_count,
                    failures=len(failures),
                    dry_run=int(args.dry_run),

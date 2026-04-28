@@ -173,6 +173,44 @@ def render_status_overdue() -> list[str]:
     return out
 
 
+def render_invoices_pending_send(window_days: int = 7) -> list[str]:
+    """Invoices issued in the last N days — Phil reviews these in Gmail
+    Drafts and sends. Surface here as redundancy alongside the Google
+    Task that compose-invoice creates. Skips silently if empty."""
+    c = _conn(CONTRACTS_DB)
+    if not c:
+        return []
+    rows = c.execute(f"""
+        SELECT cp.invoice_id, cp.amount, cp.milestone, cp.invoiced_at, cp.due_date,
+               c.contracting_entity_them, c.billing_account
+        FROM contract_payment cp
+        JOIN contract c ON c.id = cp.contract_id
+        WHERE cp.invoice_id IS NOT NULL
+          AND cp.invoiced_at IS NOT NULL
+          AND cp.paid_at IS NULL
+          AND julianday('now') - julianday(cp.invoiced_at) <= {int(window_days)}
+        ORDER BY cp.invoiced_at DESC
+    """).fetchall()
+    c.close()
+    if not rows:
+        return []
+    out = [f"### Invoices pending send (issued ≤ {window_days}d)"]
+    out.append("")
+    out.append("| Invoice | To | Amount | Issued | Send from | Due |")
+    out.append("|---|---|---|---|---|---|")
+    for r in rows:
+        amt = f"${r['amount']:,}" if r["amount"] else "—"
+        from_acct = r["billing_account"] or "—"
+        due = r["due_date"] or "—"
+        issued = (r["invoiced_at"] or "")[:10]
+        out.append(f"| {r['invoice_id']} | {r['contracting_entity_them']} | {amt} | "
+                    f"{issued} | {from_acct} | {due} |")
+    out.append("")
+    out.append("_Open Gmail Drafts (in the matching account) and search the invoice number to find the prepared draft._")
+    out.append("")
+    return out
+
+
 def render_payments_outstanding() -> list[str]:
     c = _conn(CONTRACTS_DB)
     if not c:
@@ -210,6 +248,7 @@ SECTIONS = {
     "single_threaded":  ("Pipeline risk — single-threaded", render_single_threaded),
     "at_risk":          ("At-risk engagements", render_at_risk_engagements),
     "status_overdue":   ("Status reports overdue", render_status_overdue),
+    "pending_invoices": ("Invoices pending send", render_invoices_pending_send),
     "payments":         ("Payments outstanding", render_payments_outstanding),
 }
 
