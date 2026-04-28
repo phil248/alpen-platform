@@ -32,7 +32,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render, collect_variables  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -89,7 +89,7 @@ def load_lead(slug: str) -> dict | None:
 
 def insert_sow_contract(slug: str, lead: dict, msa_id: str, tier: int, value: int | None,
                         tenant_id: str, entity_id: str, vault_path: str,
-                        principal: dict, signatory_them: str | None) -> bool:
+                        signatory_name: str, signatory_them: str | None) -> bool:
     if not CONTRACTS_DB.is_file():
         print("  ! contracts.db missing; run regenerate-contracts-index first", file=sys.stderr)
         return False
@@ -107,7 +107,7 @@ def insert_sow_contract(slug: str, lead: dict, msa_id: str, tier: int, value: in
             lead.get("display_name") or slug,
             "TBD",
             lead.get("company_name") or lead.get("display_name") or "TBD",
-            principal["name"],
+            signatory_name,
             signatory_them,
             datetime.now().date().isoformat(),
             value,
@@ -135,13 +135,14 @@ def main() -> int:
     parser.add_argument("--msa-contract-id", required=True)
     parser.add_argument("--sow-number", default="1")
     parser.add_argument("--signatory-them", default=None)
+    parser.add_argument("--signatory", help="principal id of OUR signer (overrides entity default)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     start = time.time()
     tenant_cfg = load_tenant_config(args.tenant)
     entity = find_entity(tenant_cfg, args.entity)
-    principal = find_principal(tenant_cfg)
+    sig_ctx = build_signatory_context(tenant_cfg, args.entity, args.signatory)
     template_path, template_text = load_template(args.entity, args.tenant)
     lead = load_lead(args.lead_slug)
     if not lead:
@@ -207,12 +208,9 @@ def main() -> int:
 
     context = {
         "tenant": {
-            "principal_name": principal["name"],
-            "principal_title": principal.get("role", "ceo").upper(),
-            "partner_name": "TBD",
+            **sig_ctx,
         },
         "entity": entity,
-        "principal": principal,
         "deal": deal,
         "today": today.strftime("%Y-%m-%d"),
     }
@@ -247,7 +245,7 @@ def main() -> int:
     inserted = insert_sow_contract(
         sow_slug, lead, args.msa_contract_id, args.tier,
         lead.get("value_estimate"), args.tenant, args.entity,
-        rel_path, principal, args.signatory_them,
+        rel_path, sig_ctx["signatory_name"], args.signatory_them,
     )
     if inserted:
         print(f"contracts.db: inserted SOW row '{sow_slug}' (status=DRAFT, parent={args.msa_contract_id})")

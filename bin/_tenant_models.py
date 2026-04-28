@@ -137,6 +137,14 @@ class ICP(BaseModel):
     geographies: list[str] = Field(default_factory=list)
 
 
+class EntitySignatory(BaseModel):
+    """A principal authorized to sign contracts for this entity, with the title
+    they sign under. One signatory per entity should have default=true."""
+    principal_id: str
+    title: str
+    default: bool = False
+
+
 class Entity(BaseModel):
     id: str
     display_name: str
@@ -155,6 +163,16 @@ class Entity(BaseModel):
     address: str | None = None                  # physical office address for contracts
     venue_city: str | None = None               # city for jurisdiction clause (e.g., "Cincinnati, OH")
     services_description: str | None = None     # WHEREAS clause description (e.g., "consulting and professional services")
+    signatories: list[EntitySignatory] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def at_most_one_default_signatory(self) -> "Entity":
+        defaults = [s for s in self.signatories if s.default]
+        if len(defaults) > 1:
+            raise ValueError(
+                f"entity {self.id!r} has {len(defaults)} default signatories; exactly one allowed"
+            )
+        return self
 
 
 class DepartmentConfig(BaseModel):

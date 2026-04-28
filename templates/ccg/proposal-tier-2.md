@@ -145,8 +145,8 @@ Date: _______________________________________________
 
 Signature: __________________________________________
 
-Name: {{tenant.partner_name}}
+Name: {{tenant.signatory_name}}
 
-Title: {{tenant.partner_title}}
+Title: {{tenant.signatory_title}}
 
 Date: _______________________________________________

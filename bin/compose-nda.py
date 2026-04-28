@@ -50,7 +50,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -157,13 +157,14 @@ def main() -> int:
     parser.add_argument("--beginning-ci-date",
                         help="ISO YYYY-MM-DD; defaults to today")
     parser.add_argument("--slug")
+    parser.add_argument("--signatory", help="principal id of OUR signer (overrides entity default)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     start = time.time()
     tenant_cfg = load_tenant_cfg(args.tenant)
     entity = find_entity(tenant_cfg, args.entity)
-    principal = find_principal(tenant_cfg)
+    sig_ctx = build_signatory_context(tenant_cfg, args.entity, args.signatory)
     template_path, template_text = load_template(args.entity, args.tenant)
 
     today = datetime.now()
@@ -174,15 +175,12 @@ def main() -> int:
     )
     beginning_date = args.beginning_ci_date or today.strftime("%Y-%m-%d")
 
-    # Build "us" side from entity + principal
+    # Build "us" side from entity + signatory context
     our_legal = entity.get("legal_name", "TBD")
     our_address = entity.get("address", "TBD")
     our_descriptor = entity.get("entity_descriptor", "TBD")
-    our_signatory_name = principal["name"]
-    # Title: temporarily uses principal role; will use entity.signatories[].title once
-    # the per-entity-signatory schema lands. For now: "President, <entity>" matches the
-    # pattern Phil + Krystal currently sign as on the InnoSync executed CDA.
-    our_signatory_title = f"President, {our_legal}"
+    our_signatory_name = sig_ctx["signatory_name"]
+    our_signatory_title = sig_ctx["signatory_title"]
 
     # Build deal context based on direction
     if args.direction == "inbound":
@@ -221,10 +219,7 @@ def main() -> int:
     deal["beginning_ci_sharing_date"]  = beginning_date
 
     context = {
-        "tenant": {
-            "principal_name":  principal["name"],
-            "principal_email": (principal.get("accounts") or [{}])[0].get("address", "TBD"),
-        },
+        "tenant": {**sig_ctx},
         "entity":   entity,
         "deal":     deal,
         "today":    today.strftime("%Y-%m-%d"),

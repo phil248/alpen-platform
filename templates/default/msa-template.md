@@ -103,8 +103,8 @@ Accepted and agreed to as of the Effective Date by the authorized representative
 | {{deal.client_legal_name}} | {{entity.legal_name}} |
 |---|---|
 | Signature: | Signature: |
-| Print Name: {{deal.client_signatory_name}} | Print Name: {{tenant.principal_name}} |
-| Print Title: {{deal.client_signatory_title}} | Print Title: {{tenant.principal_title}} |
+| Print Name: {{deal.client_signatory_name}} | Print Name: {{tenant.signatory_name}} |
+| Print Title: {{deal.client_signatory_title}} | Print Title: {{tenant.signatory_title}} |
 | Date: | Date: |
 | Address: {{deal.client_address}} | Address: {{entity.address}} |
 | Email: {{deal.client_signatory_email}} | Email: {{tenant.principal_email}} |

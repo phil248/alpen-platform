@@ -33,7 +33,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -97,6 +97,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tenant", required=True)
     parser.add_argument("--engagement-id", required=True)
+    parser.add_argument("--signatory", help="principal id of signer (overrides entity default)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -123,9 +124,8 @@ def main() -> int:
         except (ValueError, TypeError):
             pass
 
-    principal = next((p for p in tenant_cfg["principals"] if p.get("role") == "ceo"), tenant_cfg["principals"][0])
-    partner = next((p for p in tenant_cfg["principals"] if p.get("role") == "partner"), None)
     entity = next((e for e in tenant_cfg["entities"] if e.get("id") == eng.get("entity_id")), tenant_cfg["entities"][0])
+    sig_ctx = build_signatory_context(tenant_cfg, entity["id"], args.signatory)
 
     deal = {
         "client_name":           eng.get("client_name") or "TBD",
@@ -176,16 +176,11 @@ def main() -> int:
 
     context = {
         "tenant": {
-            "principal_name":  principal.get("name"),
-            "principal_title": principal.get("role", "ceo").upper(),
-            "principal_email": (principal.get("accounts") or [{}])[0].get("address", "TBD"),
+            **sig_ctx,
             "principal_phone": "TBD",
-            "partner_name":    (partner or {}).get("name", "TBD"),
-            "partner_email":   ((partner or {}).get("accounts") or [{}])[0].get("address", "TBD") if partner else "TBD",
             "escalation_executive": "TBD",
         },
         "entity": entity,
-        "principal": principal,
         "deal": deal,
         "today": today.strftime("%Y-%m-%d"),
     }

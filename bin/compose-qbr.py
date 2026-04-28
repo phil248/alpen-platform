@@ -32,7 +32,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -233,6 +233,7 @@ def main() -> int:
     parser.add_argument("--tenant", required=True)
     parser.add_argument("--engagement-id", required=True)
     parser.add_argument("--quarter", help="'Q2 2026'; defaults to current quarter")
+    parser.add_argument("--signatory", help="principal id of signer (overrides entity default)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -260,17 +261,11 @@ def main() -> int:
         "renewal_recommendation": "TBD",
     }
 
-    principal = next((p for p in tenant_cfg["principals"] if p.get("role") == "ceo"), tenant_cfg["principals"][0])
-    partner = next((p for p in tenant_cfg["principals"] if p.get("role") == "partner"), None)
     entity = next((e for e in tenant_cfg["entities"] if e.get("id") == eng.get("entity_id")), tenant_cfg["entities"][0])
+    sig_ctx = build_signatory_context(tenant_cfg, entity["id"], args.signatory)
 
     context = {
-        "tenant": {
-            "principal_name": principal.get("name"),
-            "principal_email": (principal.get("accounts") or [{}])[0].get("address", "TBD"),
-            "partner_name": partner.get("name") if partner else "TBD",
-            "partner_email": ((partner or {}).get("accounts") or [{}])[0].get("address", "TBD") if partner else "TBD",
-        },
+        "tenant": {**sig_ctx},
         "entity": entity,
         "deal": deal_ctx,
         "today": datetime.now().strftime("%Y-%m-%d"),

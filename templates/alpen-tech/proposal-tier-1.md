@@ -123,8 +123,8 @@ Date: _______________________________________________
 
 Signature: __________________________________________
 
-Name: {{tenant.principal_name}}
+Name: {{tenant.signatory_name}}
 
-Title: {{tenant.principal_title}}
+Title: {{tenant.signatory_title}}
 
 Date: _______________________________________________

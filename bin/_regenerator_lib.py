@@ -224,6 +224,92 @@ def coerce_int(raw) -> int | None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Signatory resolution (used by all composer scripts)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def build_signatory_context(tenant_cfg: dict, entity_id: str,
+                             signatory_override: str | None = None) -> dict:
+    """Build the {principal_*, partner_*, signatory_*} block for tenant context.
+
+    - principal_*: the role=ceo principal (Phil), with their entity-specific title
+                   (e.g. 'Chief Operating Officer' at CCG, 'Chief Executive Officer' at Alpen Tech)
+    - partner_*:   the role=partner principal (Krystal), with their entity-specific title
+                   (e.g. 'Chief Executive Officer' at CCG; falls back to 'Partner' if
+                   not authorized at the entity)
+    - signatory_*: whoever find_signatory resolved (Krystal for CCG default; Phil for Alpen)
+
+    Templates' SIGNATURE BLOCKS use {{tenant.signatory_*}}.
+    Templates' BODY REFERENCES (e.g., 'Krystal is the lead investigator') keep
+    using {{tenant.partner_*}} or {{tenant.principal_*}} as static role labels.
+    """
+    entity = next((e for e in tenant_cfg.get("entities") or [] if e.get("id") == entity_id), {})
+    sigs = entity.get("signatories") or []
+    title_by_principal = {s["principal_id"]: s["title"] for s in sigs}
+
+    ceo = next((p for p in tenant_cfg.get("principals") or [] if p.get("role") == "ceo"), {})
+    partner = next((p for p in tenant_cfg.get("principals") or [] if p.get("role") == "partner"), {})
+
+    signatory, signatory_title = find_signatory(tenant_cfg, entity_id, signatory_override)
+
+    def email_of(p: dict) -> str:
+        return (p.get("accounts") or [{}])[0].get("address", "TBD") if p else "TBD"
+
+    return {
+        "principal_name":  ceo.get("name", "TBD"),
+        "principal_title": title_by_principal.get(ceo.get("id", ""), "Chief Executive Officer"),
+        "principal_email": email_of(ceo),
+        "partner_name":  partner.get("name", "TBD") if partner else "TBD",
+        "partner_title": title_by_principal.get(partner.get("id", ""), "Partner") if partner else "TBD",
+        "partner_email": email_of(partner) if partner else "TBD",
+        "signatory_name":  signatory["name"],
+        "signatory_title": signatory_title,
+        "signatory_email": email_of(signatory),
+    }
+
+
+def find_signatory(tenant_cfg: dict, entity_id: str, override_principal_id: str | None = None) -> tuple[dict, str]:
+    """Resolve which principal signs for the given entity, with what title.
+
+    Args:
+      tenant_cfg: parsed tenant config (full config.yaml contents)
+      entity_id: entity to look up signatories under
+      override_principal_id: if set, use this principal (must be authorized for the entity)
+
+    Returns (principal_dict, title_string).
+
+    Raises SystemExit if:
+      - entity not in config
+      - override principal not authorized for entity
+    """
+    entity = next((e for e in tenant_cfg.get("entities") or [] if e.get("id") == entity_id), None)
+    if not entity:
+        sys.exit(f"error: entity {entity_id!r} not in tenant config")
+    sigs = entity.get("signatories") or []
+
+    # No signatories declared — fall back to first principal as legacy default
+    if not sigs:
+        principals = tenant_cfg.get("principals") or []
+        if not principals:
+            sys.exit(f"error: entity {entity_id!r} has no signatories and no principals to fall back to")
+        return principals[0], "Authorized Representative"
+
+    # Pick the requested signatory or the entity's default
+    if override_principal_id:
+        match = next((s for s in sigs if s.get("principal_id") == override_principal_id), None)
+        if not match:
+            authorized = ", ".join(s.get("principal_id") for s in sigs)
+            sys.exit(f"error: principal {override_principal_id!r} not authorized to sign for entity {entity_id!r}; authorized: {authorized}")
+    else:
+        match = next((s for s in sigs if s.get("default")), sigs[0])
+
+    principal = next((p for p in tenant_cfg.get("principals") or [] if p.get("id") == match["principal_id"]), None)
+    if not principal:
+        sys.exit(f"error: principal {match['principal_id']!r} declared as signatory for {entity_id!r} but not found in tenant.principals")
+
+    return principal, match["title"]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Telemetry
 # ──────────────────────────────────────────────────────────────────────────────
 

@@ -45,7 +45,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -148,13 +148,14 @@ def main() -> int:
     parser.add_argument("--client-signatory-email", help="Email")
     parser.add_argument("--effective-date", help="ISO date YYYY-MM-DD; defaults to today")
     parser.add_argument("--slug", help="Override the contract slug (default: msa-<client-slug>-<YYYY>)")
+    parser.add_argument("--signatory", help="principal id of OUR signer (overrides entity default)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     start = time.time()
     tenant_cfg = load_tenant_cfg(args.tenant)
     entity = find_entity(tenant_cfg, args.entity)
-    principal = find_principal(tenant_cfg)
+    sig_ctx = build_signatory_context(tenant_cfg, args.entity, args.signatory)
     template_path, template_text = load_template(args.entity, args.tenant)
 
     today = datetime.now()
@@ -177,11 +178,7 @@ def main() -> int:
     }
 
     context = {
-        "tenant": {
-            "principal_name":  principal["name"],
-            "principal_title": principal.get("role", "ceo").upper(),
-            "principal_email": (principal.get("accounts") or [{}])[0].get("address", "TBD"),
-        },
+        "tenant": {**sig_ctx},
         "entity":   entity,
         "deal":     deal,
         "today":    today.strftime("%Y-%m-%d"),
@@ -225,7 +222,7 @@ def main() -> int:
     print(f"wrote: {out_path}")
 
     inserted = insert_msa_row(
-        msa_slug, deal, entity, args.tenant, principal["name"],
+        msa_slug, deal, entity, args.tenant, sig_ctx["signatory_name"],
         str(out_path.relative_to(vault)),
     )
     if inserted:

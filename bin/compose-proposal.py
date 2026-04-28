@@ -29,7 +29,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _regenerator_lib import emit_telemetry  # noqa: E402
+from _regenerator_lib import build_signatory_context, emit_telemetry, find_signatory  # noqa: E402
 from _template_renderer import render, collect_variables  # noqa: E402
 
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
@@ -130,20 +130,15 @@ def lead_to_deal_context(lead: dict, override_tier: int | None) -> dict:
 # Build context
 # ──────────────────────────────────────────────────────────────────────────────
 
-def build_context(tenant_cfg: dict, entity: dict, principal: dict, partner: dict | None,
+def build_context(tenant_cfg: dict, entity: dict, sig_ctx: dict,
                   deal: dict, today: datetime) -> dict:
     return {
         "tenant": {
             "id": tenant_cfg["tenant"]["id"],
-            "principal_name": principal["name"],
-            "principal_title": principal.get("role", "ceo").upper(),
-            "principal_email": (principal.get("accounts") or [{}])[0].get("address", "TBD"),
-            "partner_name": (partner or {}).get("name", "TBD"),
-            "partner_email": ((partner or {}).get("accounts") or [{}])[0].get("address", "TBD") if partner else "TBD",
-            "business_address": "TBD",
+            **sig_ctx,
+            "business_address": entity.get("address", "TBD"),
         },
         "entity": entity,
-        "principal": principal,
         "deal": deal,
         "today": today.strftime("%Y-%m-%d"),
         "year": today.year,
@@ -230,6 +225,7 @@ def main() -> int:
     parser.add_argument("--lead-slug", help="lead id to load from leads.db")
     parser.add_argument("--deal-json", help="path to JSON file with deal context")
     parser.add_argument("--dry-run", action="store_true", help="render to stdout, don't write or transition")
+    parser.add_argument("--signatory", help="principal id of signer (overrides entity default; e.g., 'phil' for CCG to sign as COO)")
     args = parser.parse_args()
 
     if not (args.lead_slug or args.deal_json):
@@ -238,8 +234,7 @@ def main() -> int:
     start = time.time()
     tenant_cfg = load_tenant_config(args.tenant)
     entity = find_entity(tenant_cfg, args.entity)
-    principal = find_principal(tenant_cfg)
-    partner = find_partner(tenant_cfg)
+    sig_ctx = build_signatory_context(tenant_cfg, args.entity, args.signatory)
 
     template_path, template_text = load_template(args.tier, args.entity, args.tenant)
 
@@ -255,7 +250,7 @@ def main() -> int:
             deal = json.load(f)
         lead_slug_for_output = deal.get("client_name", "unknown").lower().replace(" ", "-")
 
-    context = build_context(tenant_cfg, entity, principal, partner, deal, datetime.now())
+    context = build_context(tenant_cfg, entity, sig_ctx, deal, datetime.now())
 
     print(f"=== compose-proposal: tier {args.tier}, entity {args.entity}, tenant {args.tenant} ===")
     print(f"template:   {template_path}")

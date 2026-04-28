@@ -47,6 +47,9 @@ entities:
     address: "7124 Summit Ave, Madeira OH 45243"
     venue_city: "Cincinnati, OH"
     services_description: "brain health and workplace wellbeing consulting services"
+    signatories:
+      - { principal_id: krystal, title: "Chief Executive Officer", default: true }
+      - { principal_id: phil,    title: "Chief Operating Officer" }
     icp:
       titles:
         - Chief People Officer
@@ -80,6 +83,8 @@ entities:
     address: "7124 Summit Ave, Madeira OH 45243"
     venue_city: "Cincinnati, OH"
     services_description: "AI consulting, agent operations, and analytical services"
+    signatories:
+      - { principal_id: phil, title: "Chief Executive Officer", default: true }
     icp:
       titles:
         - CTO
