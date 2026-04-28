@@ -194,17 +194,21 @@ def coerce_int(raw) -> int | None:
 
 def emit_telemetry(script_name: str, *, outcome: str, **metrics) -> None:
     """Emit a script_completed event via hfo-log. Silent on failure
-    (telemetry never blocks real work)."""
+    (telemetry never blocks real work).
+
+    hfo-log uses --key value (not key=value); converts underscores in metric
+    keys to hyphens for consistency with the established CLI convention."""
     if not HFO_LOG.is_file():
         return
-    args = [
+    args: list[str] = [
         str(HFO_LOG),
-        f"script={script_name}",
-        "event=script_completed",
-        f"outcome={outcome}",
+        "--script", script_name,
+        "--event", "script_completed",
+        "--outcome", outcome,
     ]
     for k, v in metrics.items():
-        args.append(f"{k}={v}")
+        flag = "--" + k.replace("_", "-")
+        args.extend([flag, str(v)])
     try:
         subprocess.run(args, check=False, capture_output=True, timeout=5)
     except Exception:
