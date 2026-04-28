@@ -23,7 +23,14 @@ from pathlib import Path
 
 import yaml
 
-PLACEHOLDER_RE = re.compile(r"~~([A-Za-z0-9_-]+)")
+# Match `~~name` ONLY when not surrounded by tildes on either side.
+# - `(?<!~)` — char before `~~` is not a tilde (rules out `~~~~name`)
+# - `(?>[A-Za-z0-9_-]+)` — atomic group consumes the whole name without
+#   backtracking, so the trailing lookahead can't be satisfied by a shorter
+#   match (this is what makes `~~Task~~` skip cleanly instead of capturing `Tas`)
+# - `(?!~)` — char after the name is not a tilde (rules out strikethrough)
+# Requires Python 3.11+ for atomic groups.
+PLACEHOLDER_RE = re.compile(r"(?<!~)~~(?>([A-Za-z0-9_-]+))(?!~)")
 PLATFORM_ROOT = Path(__file__).resolve().parent.parent
 
 
