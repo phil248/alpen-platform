@@ -1,0 +1,8 @@
+{
+  "name": "alpen-revenue",
+  "version": "0.1.0",
+  "description": "Alpen Platform revenue extensions on top of the upstream `sales` plugin. Adds proposal-composer, scope-builder, qbr-prep, status-report-composer — skills that consume the templates pack (templates/default/) and tier-ladder config to produce real Tier 1/2/3 deliverables. Integrates with the leads.db / contracts.db / engagements.db state machine.",
+  "author": {
+    "name": "Alpen Tech"
+  }
+}

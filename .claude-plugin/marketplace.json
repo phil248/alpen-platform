@@ -351,6 +351,14 @@
       "author": {
         "name": "Alpen Tech"
       }
+    },
+    {
+      "name": "alpen-revenue",
+      "source": "./alpen-revenue",
+      "description": "Revenue extensions on top of upstream sales plugin: proposal-composer, scope-builder, qbr-prep, status-report-composer.",
+      "author": {
+        "name": "Alpen Tech"
+      }
     }
   ]
 }
