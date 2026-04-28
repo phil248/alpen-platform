@@ -1,14 +1,14 @@
 <!--
 TEMPLATE: proposal-tier-2 (CCG entity override)
-TIER: 2 (Program Design — CCG language for Tier 2)
+TIER: 2 (Program Design - CCG language for Tier 2)
 USE: project-based; defined scope; designed engagement
 PRICING: $30K-$100K
 DURATION: 6-12 weeks per engagement
-VOICE: CCG/Krystal voice (templates/ccg/brand-voice.md) — strict no em-dash; reframe required; no wellness-industry language
+VOICE: CCG/Krystal voice (templates/ccg/brand-voice.md) - strict no em-dash; reframe required; no wellness-industry language
 PRECEDENCE: overrides templates/default/proposal-tier-2.md when entity=ccg
 -->
 
-# Cognitive Capital Group — Program Design Proposal
+# Cognitive Capital Group - Program Design Proposal
 
 **Prepared for:** {{deal.client_name}}
 **Prepared by:** {{tenant.partner_name}} and {{tenant.principal_name}}
@@ -36,9 +36,9 @@ PRECEDENCE: overrides templates/default/proposal-tier-2.md when entity=ccg
 
 This program produces three things, all of which you will own:
 
-1. **{{deal.deliverable_1}}** — translates the underlying science into specific design choices for your environment
-2. **{{deal.deliverable_2}}** — gives your team a measurement framework that connects brain health to business outcomes
-3. **{{deal.deliverable_3}}** — embeds capability transfer into your team so this continues after we step out
+1. **{{deal.deliverable_1}}** - translates the underlying science into specific design choices for your environment
+2. **{{deal.deliverable_2}}** - gives your team a measurement framework that connects brain health to business outcomes
+3. **{{deal.deliverable_3}}** - embeds capability transfer into your team so this continues after we step out
 
 ---
 
@@ -46,15 +46,15 @@ This program produces three things, all of which you will own:
 
 This is a {{deal.sprint_weeks}}-week engagement organized around the science-to-practice bridge. Each phase ends with your team having a tangible artifact and a decision in front of you.
 
-### Phase 1 — Discovery and baseline ({{deal.discovery_weeks}} weeks)
+### Phase 1 - Discovery and baseline ({{deal.discovery_weeks}} weeks)
 
 Stakeholder interviews, current-state mapping, and baseline-evidence assembly. You leave this phase knowing the size of the gap between what your team is doing today and what the evidence indicates moves the needle.
 
-### Phase 2 — Program design ({{deal.design_weeks}} weeks)
+### Phase 2 - Program design ({{deal.design_weeks}} weeks)
 
 Joint working sessions to translate the evidence into design choices specific to your team, your industry, and your existing infrastructure. We deliver a designed program that names what changes, who owns each element, and how success is measured.
 
-### Phase 3 — Activation and capability transfer ({{deal.activation_weeks}} weeks)
+### Phase 3 - Activation and capability transfer ({{deal.activation_weeks}} weeks)
 
 We help your team launch the first phase of the program and build the capability to run it independently. By the end, your team owns the program and we are an on-call resource, not a dependency.
 
