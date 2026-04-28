@@ -39,12 +39,12 @@ Parse the user's input to determine:
 
 Gather relevant background from available sources:
 
-**~~email:**
+**Gmail:**
 - Previous correspondence with this customer on this topic
 - Any commitments or timelines previously shared
 - Tone and style of the existing thread
 
-**~~chat:**
+**Telegram:**
 - Internal discussions about this customer or topic
 - Any guidance from product, engineering, or leadership
 - Similar situations and how they were handled
@@ -59,7 +59,7 @@ Gather relevant background from available sources:
 - Known issues or workarounds
 - SLA status and response time commitments
 
-**~~knowledge base:**
+**Obsidian + sqlite-vec RAG base:**
 - Official documentation or help articles to reference
 - Product roadmap information (if shareable)
 - Policy or process documentation

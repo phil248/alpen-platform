@@ -47,8 +47,8 @@ Using the category taxonomy and priority framework below:
 Before routing, check available sources:
 
 - **~~support platform**: Search for similar open or recently resolved tickets
-- **~~knowledge base**: Check for known issues or existing documentation
-- **~~project tracker**: Check if there's an existing bug report or feature request
+- **Obsidian + sqlite-vec RAG base**: Check for known issues or existing documentation
+- **Markdown + GitHub Issues tracker**: Check if there's an existing bug report or feature request
 
 Apply the duplicate detection process below.
 
