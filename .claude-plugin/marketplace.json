@@ -327,6 +327,14 @@
       "author": {
         "name": "Alpen Tech"
       }
+    },
+    {
+      "name": "alpen-deep-research",
+      "source": "./alpen-deep-research",
+      "description": "Open-web deep research with structured-entity extraction. 5-subagent pipeline + 12-entity schema. Invoked by Sales/Legal/Investments/Knowledge/CompIntel.",
+      "author": {
+        "name": "Alpen Tech"
+      }
     }
   ]
 }

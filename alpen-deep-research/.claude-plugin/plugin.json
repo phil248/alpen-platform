@@ -1,0 +1,8 @@
+{
+  "name": "alpen-deep-research",
+  "version": "0.1.0",
+  "description": "Open-web deep research with structured-entity extraction. Coordinates a 5-subagent pipeline (research → acquisition → processing → analysis → memory-orchestration) over a tiered web-acquisition stack (HTTP → Playwright → Chrome). Cross-cutting capability invoked by Sales (lead/account research), Legal (counter-party DD), Investments (manager DD), Knowledge (CCG client research), CompIntel (competitor profiling).",
+  "author": {
+    "name": "Alpen Tech"
+  }
+}
