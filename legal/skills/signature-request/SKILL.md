@@ -26,7 +26,7 @@ Prepare for signature: @$1
 
 Accept the document in any format:
 - **File upload**: PDF, DOCX
-- **URL**: Link to a document in ~~cloud storage or ~~CLM
+- **URL**: Link to a document in Local macOS + Google Drive + Firebase storage or ~~CLM
 - **Reference**: "The Acme Corp MSA we finalized yesterday"
 
 ### Step 2: Pre-Signature Checklist
@@ -101,4 +101,4 @@ Gather signing details:
 
 1. **Check entity names carefully** — The most common signing error is incorrect legal entity names.
 2. **Verify authority** — Make sure each signer is authorized to bind their organization.
-3. **Keep a copy** — Executed copies should be filed in ~~cloud storage or ~~CLM immediately after execution.
+3. **Keep a copy** — Executed copies should be filed in Local macOS + Google Drive + Firebase storage or ~~CLM immediately after execution.
