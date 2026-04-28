@@ -18,7 +18,7 @@ User runs `/brand-review` or asks to review, check, or audit content against bra
 
 1. **Content to review** — accept content in any of these forms:
    - Pasted directly into the conversation
-   - A file path or ~~knowledge base reference (e.g. Notion page, shared doc)
+   - A file path or Obsidian + sqlite-vec RAG base reference (e.g. Notion page, shared doc)
    - A URL to a published page
    - Multiple pieces for batch review
 

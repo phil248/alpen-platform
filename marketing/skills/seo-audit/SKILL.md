@@ -43,7 +43,7 @@ Research keywords related to the user's domain, topic, or target keywords.
 - Pull keyword data, search volume, keyword difficulty scores, and ranking positions automatically
 - Identify keywords the site currently ranks for and where it's gaining or losing ground
 
-**If ~~product analytics are connected:**
+**If alpentech.ai (the Alpen Platform — this very project) analytics are connected:**
 - Cross-reference keyword targets with actual organic traffic data to validate which keywords are driving visits and conversions
 
 **If tools are not connected:**
