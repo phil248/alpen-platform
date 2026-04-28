@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import importlib.util
 import os
 import re
 import shutil
@@ -50,7 +51,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from email import encoders
 from email.message import EmailMessage
 from pathlib import Path
@@ -425,6 +426,102 @@ def render_pdf(ctx: InvoiceRenderContext, out_path: Path) -> bool:
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _hourly_synthesize_payment(contract: dict, args) -> list[dict]:
+    """For hourly billing: read calendar over [period-start, period-end],
+    compute billable minutes via the same rules as time-billable.py, then
+    INSERT a contract_payment row representing the period and return it
+    (loaded back) for the standard invoice pipeline.
+
+    Idempotency: the milestone label encodes the period, so a second call
+    over the same window will detect the existing invoiced row and exit.
+    """
+    # Defer import so callers using only milestone mode aren't taxed.
+    # time-billable.py has a hyphen so import_module won't work.
+    # Use spec_from_file_location to load it as a module on the fly.
+    # Register in sys.modules BEFORE exec_module so @dataclass works
+    # (Python 3.14's dataclass machinery walks sys.modules).
+    tb_path = Path(__file__).resolve().parent / "time-billable.py"
+    spec = importlib.util.spec_from_file_location("_time_billable", tb_path)
+    tb = importlib.util.module_from_spec(spec)
+    sys.modules["_time_billable"] = tb
+    spec.loader.exec_module(tb)
+
+    if not contract.get("hourly_rate"):
+        sys.exit(f"error: hourly billing requires hourly_rate on contract {contract['id']!r}")
+
+    period_days = contract.get("billing_period_days") or 30
+    end_d = (datetime.fromisoformat(args.period_end).date()
+              if args.period_end else date.today())
+    start_d = (datetime.fromisoformat(args.period_start).date()
+                if args.period_start else (end_d - timedelta(days=period_days)))
+    if start_d >= end_d:
+        sys.exit("error: period-start must be before period-end")
+
+    milestone_label = f"hourly-{start_d.isoformat()}-to-{end_d.isoformat()}"
+
+    # Idempotency: if a payment row already exists for this label, refuse to
+    # double-invoice. Caller can pass --period-start/-end to invoice a different window.
+    conn = sqlite3.connect(CONTRACTS_DB)
+    existing = conn.execute(
+        "SELECT id, invoice_id FROM contract_payment "
+        "WHERE contract_id = ? AND milestone = ?",
+        (contract["id"], milestone_label),
+    ).fetchone()
+    conn.close()
+    if existing:
+        sys.exit(f"error: hourly payment for window {milestone_label} already recorded "
+                  f"(payment_id={existing[0]}, invoice_id={existing[1]}); choose a different window")
+
+    # Run the calendar classify
+    domains = set(tb.split_csv(contract.get("billing_client_domains")))
+    emails = set(tb.split_csv(contract.get("billing_client_emails")))
+    pattern = contract.get("billing_work_block_pattern")
+    if not domains and not emails and not pattern:
+        sys.exit(f"error: hourly contract {contract['id']!r} has no match config "
+                  "(billing_client_domains / _emails / _work_block_pattern all empty)")
+    granularity = contract.get("billing_round_to_minutes") or 15
+    account = (contract.get("billing_calendar_account")
+                or contract.get("billing_account") or "ccg-phil")
+
+    svc = tb.calendar_service(account)
+    start_dt = datetime.combine(start_d, datetime.min.time()).replace(tzinfo=timezone.utc)
+    end_dt = datetime.combine(end_d + timedelta(days=1), datetime.min.time()).replace(tzinfo=timezone.utc)
+    events = tb.fetch_events(svc, start_dt, end_dt)
+    total_minutes = 0
+    for e in events:
+        rule, _ = tb.classify(e, domains, emails, pattern)
+        if not rule:
+            continue
+        s_dt, e_dt, mins = tb.event_duration_minutes(e)
+        if mins <= 0:
+            continue
+        total_minutes += tb.round_up_to(mins, granularity)
+    if total_minutes <= 0:
+        return []
+
+    hours = total_minutes / 60.0
+    amount = round(hours * contract["hourly_rate"])
+    print(f"  hourly compute: {total_minutes} min ({hours:.2f} hr) @ ${contract['hourly_rate']:,}/hr = ${amount:,}")
+
+    # Insert a fresh contract_payment row representing the billed window
+    conn = sqlite3.connect(CONTRACTS_DB)
+    cur = conn.execute("""
+        INSERT INTO contract_payment (
+          contract_id, milestone, amount, due_trigger, due_date
+        ) VALUES (?, ?, ?, ?, ?)
+    """, (contract["id"], milestone_label, amount,
+          f"hourly:{hours:.2f}h@${contract['hourly_rate']}/hr",
+          (end_d + timedelta(days=30)).isoformat()))
+    conn.commit()
+    payment_id = cur.lastrowid
+    row = conn.execute("SELECT * FROM contract_payment WHERE id = ?", (payment_id,)).fetchone()
+    conn.close()
+    # Return as list[dict] in the same shape as load_uninvoiced_payments
+    cols = [d[0] for d in sqlite3.connect(CONTRACTS_DB).execute(
+        "SELECT * FROM contract_payment LIMIT 0").description]
+    return [dict(zip(cols, row))]
+
+
 def first_nonempty_line(s: str | None) -> str:
     if not s:
         return ""
@@ -455,6 +552,12 @@ def main() -> int:
     parser.add_argument("--reminder-days-before", type=int,
                         help="Override contract.reminder_days_before (default: 7)")
     parser.add_argument("--signatory", help="Override default signatory")
+    parser.add_argument("--billing-mode",
+                        help="Override contract.billing_mode for this run "
+                             "(milestone | hourly). When 'hourly', --period-start/-end "
+                             "drive the calendar-based time accumulation.")
+    parser.add_argument("--period-start", help="hourly mode: ISO YYYY-MM-DD")
+    parser.add_argument("--period-end",   help="hourly mode: ISO YYYY-MM-DD; default today")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -468,10 +571,17 @@ def main() -> int:
                    tenant_cfg["entities"][0])
     sig_ctx = build_signatory_context(tenant_cfg, entity["id"], args.signatory)
 
-    payments = load_uninvoiced_payments(args.contract_id, args.milestone)
-    if not payments:
-        sys.exit(f"error: no uninvoiced payment milestones for contract {args.contract_id!r}"
-                  + (f" matching milestone={args.milestone!r}" if args.milestone else ""))
+    billing_mode = args.billing_mode or contract.get("billing_mode") or "milestone"
+
+    if billing_mode == "hourly":
+        payments = _hourly_synthesize_payment(contract, args)
+        if not payments:
+            sys.exit("error: hourly mode found 0 billable minutes in the period; nothing to invoice")
+    else:
+        payments = load_uninvoiced_payments(args.contract_id, args.milestone)
+        if not payments:
+            sys.exit(f"error: no uninvoiced payment milestones for contract {args.contract_id!r}"
+                      + (f" matching milestone={args.milestone!r}" if args.milestone else ""))
 
     # Required billing fields — fail fast if absent
     if not contract.get("bill_to_address"):
@@ -581,6 +691,7 @@ def main() -> int:
         if md_path.exists():
             shutil.copy2(md_path, md_path.with_suffix(f".prev-{int(time.time())}.md"))
         md_path.write_text(rendered.text)
+        print(f"    wrote: {md_path.relative_to(vault)}")
 
         # PDF
         pdf_path: Path | None = None
