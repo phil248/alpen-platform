@@ -5,7 +5,21 @@ description: Quarterly rotation of API tokens and OAuth refresh tokens for conne
 
 # mcp-key-rotator
 
-## Status: stub (v0.1)
+## Status: token-age inventory live (v0.1); rotation walkthroughs deferred to v0.2
+
+## v0.1 implementation
+
+`alpen-opsec/bin/mcp-token-age.py --tenant <id>` — walks
+`~/Winnie/mcp-servers/<server>/tokens/` and `~/.claude.json`, classifies
+each token by file-birth age into green/yellow/orange/red tiers, writes
+`$VAULT/HFO/OPSEC/Audits/YYYY-MM-DD-mcp-token-age.md`.
+
+Scheduled quarterly (Jan/Apr/Jul/Oct days 1-3 06:55 AM) via
+`io.howardfamily.alpen.mcp-token-age` launchd plist, run by
+`~/Winnie/bin/alpen-mcp-token-age.sh`.
+
+v0.1 surfaces rotation candidates and provides the re-OAuth command for
+google-workspace tokens. v0.2 adds per-provider rotation walkthroughs.
 
 ## Intent
 
