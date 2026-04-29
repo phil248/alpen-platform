@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS signal (
   -- routing
   routed_to_dept  TEXT,                            -- which dept consumes this (revenue|delivery|cs|product|legal)
   routed_at       DATETIME,
+  task_id         TEXT,                            -- google task id when this signal has been turned into a follow-up task
+  task_created_at DATETIME,
   resolved_at     DATETIME,                        -- set when the signal has been acted on
   resolution      TEXT,
   CHECK (signal_type IN (
