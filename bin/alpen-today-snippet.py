@@ -173,6 +173,54 @@ def render_status_overdue() -> list[str]:
     return out
 
 
+def render_hourly_burn() -> list[str]:
+    """For each active hourly contract, show running burn vs NTE cap.
+
+    Catches NTE-approach BEFORE the monthly invoice fires the per-invoice
+    NTE warning. Skips contracts without total_value (no cap to track).
+    """
+    c = _conn(CONTRACTS_DB)
+    if not c:
+        return []
+    rows = c.execute("""
+        SELECT
+          ct.id, ct.display_name, ct.contracting_entity_them,
+          ct.total_value, ct.hourly_rate,
+          COALESCE(SUM(CASE WHEN cp.invoiced_at IS NOT NULL THEN cp.amount ELSE 0 END), 0) AS invoiced_to_date,
+          COALESCE(SUM(CASE WHEN cp.paid_at IS NOT NULL THEN cp.paid_amount ELSE 0 END), 0) AS paid_to_date
+        FROM contract ct
+        LEFT JOIN contract_payment cp ON cp.contract_id = ct.id
+        WHERE ct.status = 'EXECUTED'
+          AND ct.billing_mode = 'hourly'
+          AND ct.total_value IS NOT NULL AND ct.total_value > 0
+        GROUP BY ct.id
+        ORDER BY ct.id
+    """).fetchall()
+    c.close()
+    if not rows:
+        return []
+    out = ["### Hourly engagements: burn vs NTE"]
+    out.append("")
+    out.append("| Contract | Client | Rate | Invoiced | NTE | % used | Remaining $ | Hours left |")
+    out.append("|---|---|---|---|---|---|---|---|")
+    for r in rows:
+        invoiced = int(r["invoiced_to_date"] or 0)
+        nte = int(r["total_value"] or 0)
+        rate = int(r["hourly_rate"] or 0)
+        pct = (invoiced / nte * 100.0) if nte > 0 else 0
+        remaining_usd = max(nte - invoiced, 0)
+        hours_left = (remaining_usd / rate) if rate > 0 else 0
+        # Highlight when % used >= 75%
+        pct_str = f"**{pct:.0f}%**" if pct >= 75 else f"{pct:.0f}%"
+        out.append(
+            f"| {r['display_name']} | {r['contracting_entity_them']} | "
+            f"${rate}/hr | ${invoiced:,} | ${nte:,} | {pct_str} | "
+            f"${remaining_usd:,} | {hours_left:.1f}h |"
+        )
+    out.append("")
+    return out
+
+
 def render_invoices_pending_send(window_days: int = 7) -> list[str]:
     """Invoices issued in the last N days — Phil reviews these in Gmail
     Drafts and sends. Surface here as redundancy alongside the Google
@@ -248,6 +296,7 @@ SECTIONS = {
     "single_threaded":  ("Pipeline risk — single-threaded", render_single_threaded),
     "at_risk":          ("At-risk engagements", render_at_risk_engagements),
     "status_overdue":   ("Status reports overdue", render_status_overdue),
+    "hourly_burn":      ("Hourly burn vs NTE", render_hourly_burn),
     "pending_invoices": ("Invoices pending send", render_invoices_pending_send),
     "payments":         ("Payments outstanding", render_payments_outstanding),
 }
