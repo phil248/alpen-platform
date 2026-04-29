@@ -25,6 +25,7 @@ import argparse
 import os
 import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
 
 LEADS_DB = Path(os.path.expanduser("~/.local/state/alpen/sqlite/leads.db"))
@@ -259,6 +260,53 @@ def render_invoices_pending_send(window_days: int = 7) -> list[str]:
     return out
 
 
+def render_revenue_ytd() -> list[str]:
+    """Per-entity YTD invoiced + collected revenue. Skips silently if no
+    invoices exist this year. Always shows both entities even if one is $0
+    (so Phil sees the contrast)."""
+    c = _conn(CONTRACTS_DB)
+    if not c:
+        return []
+    year = datetime.now().year
+    rows = c.execute("""
+        SELECT
+          ct.entity_id,
+          COALESCE(SUM(CASE WHEN cp.invoiced_at IS NOT NULL THEN cp.amount ELSE 0 END), 0) AS invoiced,
+          COALESCE(SUM(CASE WHEN cp.paid_at     IS NOT NULL THEN COALESCE(cp.paid_amount, cp.amount) ELSE 0 END), 0) AS collected,
+          COUNT(CASE WHEN cp.invoiced_at IS NOT NULL THEN 1 END) AS invoice_count,
+          COUNT(CASE WHEN cp.invoiced_at IS NOT NULL AND cp.paid_at IS NULL THEN 1 END) AS outstanding_count
+        FROM contract_payment cp
+        JOIN contract ct ON ct.id = cp.contract_id
+        WHERE strftime('%Y', cp.invoiced_at) = ? OR strftime('%Y', cp.paid_at) = ?
+        GROUP BY ct.entity_id
+        ORDER BY ct.entity_id
+    """, (str(year), str(year))).fetchall()
+    c.close()
+    if not rows:
+        return []
+    out = [f"### Revenue YTD ({year})"]
+    out.append("")
+    out.append("| Entity | Invoiced | Collected | Outstanding | Invoices | Open |")
+    out.append("|---|---|---|---|---|---|")
+    total_inv = 0
+    total_col = 0
+    for r in rows:
+        invoiced = int(r["invoiced"] or 0)
+        collected = int(r["collected"] or 0)
+        outstanding = invoiced - collected
+        total_inv += invoiced
+        total_col += collected
+        out.append(
+            f"| {r['entity_id']} | ${invoiced:,} | ${collected:,} | "
+            f"${outstanding:,} | {r['invoice_count']} | {r['outstanding_count']} |"
+        )
+    if len(rows) > 1:
+        out.append(f"| **total** | **${total_inv:,}** | **${total_col:,}** | "
+                    f"**${total_inv - total_col:,}** |  |  |")
+    out.append("")
+    return out
+
+
 def render_payments_outstanding() -> list[str]:
     c = _conn(CONTRACTS_DB)
     if not c:
@@ -299,6 +347,7 @@ SECTIONS = {
     "hourly_burn":      ("Hourly burn vs NTE", render_hourly_burn),
     "pending_invoices": ("Invoices pending send", render_invoices_pending_send),
     "payments":         ("Payments outstanding", render_payments_outstanding),
+    "revenue_ytd":      ("Revenue YTD", render_revenue_ytd),
 }
 
 
