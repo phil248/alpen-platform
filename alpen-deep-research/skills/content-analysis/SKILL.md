@@ -47,37 +47,55 @@ This subagent reads from disk and writes to disk; it does not need to keep the f
 
 Generate the disk-anchored dashboard at the end of every run. **This is the canonical source of truth for entity counts.** LLM-written dashboards are forbidden; this op is deterministic Python.
 
-**Required tool calls:**
+**DISPATCH TO SCRIPT — DO NOT replicate the protocol inline.** Stage 10 calls one function:
 
-1. **Bash find** counts per kind directory:
-   ```bash
-   for kind in publications media-mentions amplifications speaking-engagements awards-received \
-               patents projects events public-presence persons content-assets citations; do
-     find '<vault_root>/'"$kind"'/' -name '*.json' 2>/dev/null | wc -l
-   done
-   ```
-2. **Bash sqlite3** chunk counts by source_kind from the RAG SQLite store.
-3. **Per-seed-person ORCID-vs-inventory delta**: re-run the Stage 3.5 truth-check (curl `pub.orcid.org/<orcid>/works` + sqlite count) for each seed person.
-4. **Write** `<vault_root>/_deliverable/<date>-verified-dashboard.md` with:
-   - Disk-anchored entity counts table (kind, on-disk count, SQLite count, RAG chunks)
-   - Per-person ORCID delta table (canonical_name, ORCID count, inventory count, delta_pct, status)
-   - Sandra/canonical-person ORCID-vs-inventory delta as headline stat
-   - Provenance sidecar `<date>-verified-dashboard.provenance.json` with `find` and `sqlite3` outputs verbatim
+```python
+from lib.content_analysis.build_verified_dashboard import build_dashboard
+result = build_dashboard(
+    inventory_root='<vault_root>',
+    rag_db_path='~/Winnie/data/client-inventories/<client>/rag.db',
+    output_md_path='<vault_root>/_deliverable/<date>-verified-dashboard.md',
+)
+# returns: {counts_by_kind, asset_coverage, rag_state, orcid_truth_check, output_md_path}
+```
 
-The Python implementation should live at `~/Winnie/alpen-platform/alpen-deep-research/lib/build_dashboard.py` (canonical) — Stage 10 of client-content-inventory dispatches it. If the script doesn't exist yet, create it; do not synthesize counts in markdown directly.
+Or via Bash:
+
+```bash
+~/Winnie/rag/venv/bin/python -m lib.content_analysis.build_verified_dashboard \
+  --inventory-root '<vault_root>' \
+  --rag-db ~/Winnie/data/client-inventories/<client>/rag.db \
+  --output '<vault_root>/_deliverable/<date>-verified-dashboard.md'
+# Add --skip-orcid for offline mode (no live pub.orcid.org calls).
+```
+
+The script does ALL of: per-kind JSON counts, asset coverage (transcript/pdf/html_local_path), RAG chunk counts + distinct paths per source_kind, per-ORCID truth-check (curl `pub.orcid.org/<orcid>/works` and compute delta_pct vs inventory pubs), atomic write of MD + `<...>.provenance.json` sidecar. Output is idempotent. Do NOT synthesize counts in markdown directly; the script is the protocol.
 
 ### op=compute_amplification_attribution (added 2026-05-07; audit finding #12)
 
-Stub op (analytics module added; depends on amplification.yaml schema landing first, which it has 2026-05-07). 
+**DISPATCH TO SCRIPT — DO NOT inline-Bash + Haiku NER.** One Python call:
 
-**Inputs:** `<vault_root>/amplifications/*.json`. 
+```python
+from lib.content_analysis.amplification_attribution import compute_amplification_attribution
+result = compute_amplification_attribution(
+    inventory_root='<vault_root>',
+    output_csv_path='<vault_root>/_deliverable/<date>-amplification-attribution.csv',
+    output_md_path='<vault_root>/_deliverable/<date>-amplification-attribution.md',
+)
+# returns: {records, complete_chains, by_outlet, by_person}
+```
 
-**What it does:** for each amplification record, NER-extract from `external_summary_50w` (or full `transcript_local_path` if present) the `external_outlet x cbh_person x cbh_programs_referenced` tuple, joining structured fields with body-text mentions via Haiku-tier LLM call. Output:
-- `<vault_root>/_deliverable/<date>-amplification-attribution.csv`
-- `<vault_root>/_deliverable/<date>-amplification-attribution.md` (rollup with totals per outlet, per person, per program)
-- Provenance sidecar `<...>.provenance.json`
+Or via Bash:
 
-Today's manual amplification-attribution rollup motivated this op; once the script exists, future runs default to it.
+```bash
+~/Winnie/rag/venv/bin/python -m lib.content_analysis.amplification_attribution \
+  --inventory-root '<vault_root>' \
+  --output-csv  '<vault_root>/_deliverable/<date>-amplification-attribution.csv' \
+  --output-md   '<vault_root>/_deliverable/<date>-amplification-attribution.md'
+# Add --skip-ner to aggregate existing fields only (no LLM calls).
+```
+
+The script iterates `amplifications/*.json`, locates the matching v2 transcript at `_assets/transcripts/<slug>*.html-extracted-v2.md` (fallback v1, then any v-less), shells out to `claude -p --model haiku --output-format text` with a strict-JSON NER prompt, parses the response (tolerant of markdown fences and preface/postface), updates the amplification JSON in-place (only fills missing fields; never overwrites curator-set values), and writes the CSV + MD aggregates atomically. The script is the protocol.
 
 ### op=compute_citation_graph (extended 2026-05-07; audit finding #10 — see hook below)
 

@@ -75,15 +75,29 @@ mv '<vault_root>/_assets/<format>/<slug>.<ext>.tmp' '<vault_root>/_assets/<forma
 
 After: verify with `ls -la` and `stat`. If body size is suspiciously small (<1KB for content URLs), escalate to Tier 2.
 
-### Tier 2: Playwright headless
+### Tier 2: real Chrome via CDP (DISPATCH TO SCRIPT)
 
-```
-mcp__plugin_playwright_playwright__browser_navigate(url=<url>)
-mcp__plugin_playwright_playwright__browser_snapshot()  # capture rendered DOM
-mcp__plugin_playwright_playwright__browser_evaluate(...)  # extract download URL or content
+**DO NOT replicate this protocol inline.** Tier 2 escalation is a single Python call:
+
+```python
+from lib.content_acquisition.tier2_playwright import fetch_pdf_tier2
+result = fetch_pdf_tier2(url, output_path)
+# result keys: status (ok|failed-content-mismatch|failed-network|failed-paywall),
+#              magic_bytes_pdf, bytes_downloaded, final_url, error
 ```
 
-For PDF download via Playwright: navigate to URL, wait for PDF to render, use `browser_evaluate` to fetch the binary, decode and write to disk.
+Or via Bash:
+
+```bash
+~/Winnie/rag/venv/bin/python -m lib.content_acquisition.tier2_playwright \
+  --url '<url>' --output '<vault_root>/_assets/pdfs/<slug>.pdf'
+```
+
+The script connects to the persistent `winnie-chrome` daemon at `http://localhost:9222` (CDP), navigates, waits for network idle + 5s for Cloudflare, attempts direct PDF body capture, falls back to publisher "Download PDF" button click, magic-byte validates with `file(1)` + raw `%PDF` header check, and atomically promotes `.tmp` to the final path. Set `tier_used: tier-2-playwright-headless` only when the dispatch returns `status: ok`.
+
+**Setup requirement (one-time):** `~/Winnie/rag/venv/bin/pip install playwright`. The browser binary is NOT needed — winnie-chrome is the browser, we just attach via CDP. No `playwright install` needed.
+
+If the script returns `failed-content-mismatch` (HTML rendered as PDF), preserve the body to `_assets/html/<slug>.html` for downstream HTML extraction and continue to Tier 3. If `failed-paywall`, skip Tier 3 and mark `blocked-by-paywall`. Do NOT call the raw Playwright MCP from inside the agent — the script is the protocol.
 
 ### Tier 3: Real Chrome with persistent profile
 
