@@ -22,7 +22,7 @@ description: >
 
 ## CRITICAL RULES (NON-NEGOTIABLE)
 
-1. **Every claim of transcript creation MUST be backed by an actual file on disk.** After every extraction, verify the transcript file exists at the expected path with non-zero bytes via Bash `ls -la` or `stat`. Never return `transcript_method: whisper-large-v3-turbo` for content you did not actually transcribe.
+1. **Every claim of transcript creation MUST be backed by an actual file on disk.** After every extraction, verify the transcript file exists at the expected path with non-zero bytes via Bash `ls -la` or `stat`. Never return `transcript_method: whisper-large-v3-turbo` for content you did not actually transcribe. Supported formats: pdf, audio-mp3, audio-m4a, video-mp4, pptx, docx, **html-page** (added 2026-05-07; audit finding #5).
 
 2. **Use real extraction tools.** Whisper transcription MUST invoke `/opt/homebrew/bin/whisper-cli` via Bash. PDF extraction MUST invoke pypdf or pdfplumber via Python. OCR MUST invoke `/opt/homebrew/bin/tesseract` via Bash. Do not narrate; execute.
 
@@ -148,6 +148,63 @@ print(f'Extracted {len(text)} chars from {len(prs.slides)} slides')
 "
 ```
 
+### HTML path (format: html-page) — added 2026-05-07; audit findings #5, #6
+
+68 cached HTML pages were never indexed beyond their abstract metadata before this path landed. Use `trafilatura` as primary, `readability-lxml` as fallback.
+
+**Dependency install (PEP 668 on macOS blocks plain `pip install`; use pipx OR the project venv):**
+
+```bash
+pipx install trafilatura
+pipx inject trafilatura readability-lxml
+# OR, against the existing rag venv:
+/Users/philhoward/Winnie/rag/venv/bin/pip install trafilatura readability-lxml
+```
+
+**Extraction:**
+
+```bash
+INPUT='<vault_root>/_assets/html/<slug>.html'
+OUT_TMP='<vault_root>/_assets/transcripts/<slug>.html-extracted.md.tmp'
+OUT_FINAL='<vault_root>/_assets/transcripts/<slug>.html-extracted.md'
+METHOD=""
+
+# Tier 1: trafilatura (preferred — preserves structure, drops boilerplate)
+TRAF_OUT=$(/Users/philhoward/Winnie/rag/venv/bin/python3 -c "
+import sys, trafilatura
+html = open('$INPUT').read()
+out = trafilatura.extract(html, output_format='markdown', include_comments=False, include_tables=True)
+sys.stdout.write(out or '')
+")
+if [[ ${#TRAF_OUT} -ge 500 ]]; then
+  printf '%s' "$TRAF_OUT" > "$OUT_TMP"
+  METHOD="trafilatura"
+else
+  # Tier 2: readability-lxml fallback
+  READ_OUT=$(/Users/philhoward/Winnie/rag/venv/bin/python3 -c "
+from readability import Document
+import sys
+doc = Document(open('$INPUT').read())
+sys.stdout.write(doc.summary())
+")
+  if [[ ${#READ_OUT} -ge 500 ]]; then
+    printf '%s' "$READ_OUT" > "$OUT_TMP"
+    METHOD="readability-lxml"
+  else
+    # Both failed; mark transcript_method=none, skip with reason='extraction-below-500-chars'
+    METHOD="none"
+  fi
+fi
+
+if [[ "$METHOD" != "none" ]]; then
+  mv "$OUT_TMP" "$OUT_FINAL"
+fi
+```
+
+Threshold: skip if extracted text < 500 chars (chrome-only artifact / auth-wall / empty page). Mark `transcript_method=none` with `notes='extraction-below-500-chars'`. Do NOT pass empty extractions downstream.
+
+Update the parent entity's `transcript_local_path` to point at `_assets/transcripts/<slug>.html-extracted.md`. Update `content-asset.transcript_method` to `trafilatura` or `readability-lxml` per the actual path used (allowed enum values per content-asset.yaml as of 2026-05-07).
+
 ### DOCX path
 
 ```bash
@@ -160,6 +217,29 @@ with open('<output_path>', 'w') as f:
 print(f'Extracted {len(text)} chars')
 "
 ```
+
+## Dependency-failure policy (added 2026-05-07; audit finding #14)
+
+Caller passes `paths.dependency_policy` from the orchestrator. Two values:
+
+| Value | Behavior on missing dependency | When to use |
+|-------|-------------------------------|-------------|
+| `hard-fail` (DEFAULT for production) | If a key dependency is missing or unimportable, REFUSE to process; emit `transcript_method: none`, `notes: dependency-missing-<tool>`, return status=failed for the asset. Phase D on 2026-05-07 silently fell back to a worse HTML stripper because trafilatura was unavailable; `hard-fail` is what would have caught this. | Production runs, anything that flows to dashboards/RAG. |
+| `soft-fail` | Log warning, skip the asset (or fall back to a documented simpler tool); continue the batch. | Ad-hoc exploration / triage runs where partial extraction is acceptable. |
+
+**Per-tool classification:**
+
+| Tool | Policy |
+|------|--------|
+| trafilatura | hard-fail (silent extraction-quality degradation) |
+| readability-lxml | hard-fail (paired fallback for trafilatura) |
+| whisper-cli | hard-fail |
+| pypdf / pdfplumber | hard-fail |
+| python-pptx / python-docx | hard-fail |
+| tesseract OCR | soft-fail (acceptable to skip a scanned page) |
+| ffmpeg | hard-fail (audio extraction prerequisite) |
+
+If running in `hard-fail` mode and a tool import fails, do NOT silently degrade. Return failure with explicit `dependency-missing-<tool>` note.
 
 ### Validation step
 

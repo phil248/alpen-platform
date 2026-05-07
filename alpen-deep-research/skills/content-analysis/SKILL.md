@@ -27,7 +27,7 @@ description: >
 
 2. **Use real computation tools.** SQLite queries MUST go through Bash `sqlite3`. Graph computation MUST use Python with networkx. Theme classification MUST use actual LLM calls (your own model context, with abstracts in the prompt). Do not narrate computations.
 
-3. **Read from disk; don't reason from claimed counts.** When you need entity counts, query SQLite. When you need publication abstracts, read the markdown files. Don't fabricate counts or claim entities exist that you didn't verify.
+3. **Read from disk; don't reason from claimed counts.** When you need entity counts, query SQLite. When you need publication abstracts, read the markdown files. Don't fabricate counts or claim entities exist that you didn't verify. **LLM-written dashboards are FORBIDDEN** (added 2026-05-07; audit finding #2): dashboard counts MUST be computed by `op=build_verified_dashboard` (deterministic Python script reading filesystem + SQLite). Never narrate-and-synthesize counts from prior agent claims.
 
 4. **Atomic writes for analytics outputs.** Write to `<path>.tmp`, then `mv`. Verify file exists with non-zero size.
 
@@ -43,9 +43,59 @@ This subagent reads from disk and writes to disk; it does not need to keep the f
 
 ## Operations
 
+### op=build_verified_dashboard (added 2026-05-07; audit finding #2)
+
+Generate the disk-anchored dashboard at the end of every run. **This is the canonical source of truth for entity counts.** LLM-written dashboards are forbidden; this op is deterministic Python.
+
+**Required tool calls:**
+
+1. **Bash find** counts per kind directory:
+   ```bash
+   for kind in publications media-mentions amplifications speaking-engagements awards-received \
+               patents projects events public-presence persons content-assets citations; do
+     find '<vault_root>/'"$kind"'/' -name '*.json' 2>/dev/null | wc -l
+   done
+   ```
+2. **Bash sqlite3** chunk counts by source_kind from the RAG SQLite store.
+3. **Per-seed-person ORCID-vs-inventory delta**: re-run the Stage 3.5 truth-check (curl `pub.orcid.org/<orcid>/works` + sqlite count) for each seed person.
+4. **Write** `<vault_root>/_deliverable/<date>-verified-dashboard.md` with:
+   - Disk-anchored entity counts table (kind, on-disk count, SQLite count, RAG chunks)
+   - Per-person ORCID delta table (canonical_name, ORCID count, inventory count, delta_pct, status)
+   - Sandra/canonical-person ORCID-vs-inventory delta as headline stat
+   - Provenance sidecar `<date>-verified-dashboard.provenance.json` with `find` and `sqlite3` outputs verbatim
+
+The Python implementation should live at `~/Winnie/alpen-platform/alpen-deep-research/lib/build_dashboard.py` (canonical) — Stage 10 of client-content-inventory dispatches it. If the script doesn't exist yet, create it; do not synthesize counts in markdown directly.
+
+### op=compute_amplification_attribution (added 2026-05-07; audit finding #12)
+
+Stub op (analytics module added; depends on amplification.yaml schema landing first, which it has 2026-05-07). 
+
+**Inputs:** `<vault_root>/amplifications/*.json`. 
+
+**What it does:** for each amplification record, NER-extract from `external_summary_50w` (or full `transcript_local_path` if present) the `external_outlet x cbh_person x cbh_programs_referenced` tuple, joining structured fields with body-text mentions via Haiku-tier LLM call. Output:
+- `<vault_root>/_deliverable/<date>-amplification-attribution.csv`
+- `<vault_root>/_deliverable/<date>-amplification-attribution.md` (rollup with totals per outlet, per person, per program)
+- Provenance sidecar `<...>.provenance.json`
+
+Today's manual amplification-attribution rollup motivated this op; once the script exists, future runs default to it.
+
+### op=compute_citation_graph (extended 2026-05-07; audit finding #10 — see hook below)
+
+(Existing description follows; extension: also write `_analytics/cited-by-network.json` capturing the cited_by graph, in addition to the existing citation-counts.csv and citation-trajectory.csv outputs. The cited_by network is the OpenAlex `/works/<id>/cited-by` query pattern aggregated across all client-led publications, output as a node-link JSON.)
+
 ### op=resolve_entities
 
 Run dedup pass across all entity types in the corpus.
+
+**Schema-drift sweep (REQUIRED pre-pass; added 2026-05-07; audit finding #15):** before the main dedup pass, normalize known divergences:
+- Person records that use `title:` instead of `canonical_name:` → rewrite frontmatter to use `canonical_name:`.
+- Publication records where `authors` is a comma-separated string → split and rewrite as JSON array.
+- Any kebab-case enum mismatches → normalize to schema YAML's exact spelling (e.g., `media_mention` → `media-mention`).
+- Reject and re-flag any record whose top-level structure is a `publications: [...]` list (roll-up antipattern; see CRITICAL RULE #8 in client-content-inventory). Move them to `_archive/<original-path>` and emit a `validator-flags` event.
+
+This pre-pass eliminates schema drift before merge logic runs; without it, dedup misses records whose name/author fields diverge from canonical.
+
+**Merge order (added 2026-05-07):** for people, MERGE BY ORCID FIRST, then by name_variants overlap, then by name-equality. ORCID is deterministic and authoritative; name-equality is the last resort.
 
 **Required tool calls:**
 
@@ -123,6 +173,7 @@ Build co-authorship network from publications.
        json.dump(data, f)
    ```
 4. **Bash ls -la:** verify outputs
+5. **Cytoscape HTML deliverable (added 2026-05-07; audit finding #11):** in addition to the GML and JSON outputs, also write a self-contained `<vault_root>/_deliverable/<date>-network-graph.html` that loads Cytoscape.js (CDN-hosted) and embeds the JSON inline. Browser-openable, no server required. This was hand-built today; making it a default deliverable.
 
 ### op=classify_themes
 

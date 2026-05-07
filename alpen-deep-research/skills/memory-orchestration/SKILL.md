@@ -43,7 +43,15 @@ These rules supersede any other guidance in this SKILL. Violations are correctne
 
 8. **JSON Lines append semantics for run-log.jsonl.** New entries get appended as one JSON object per line. Use Bash `cat >>` or read-existing-then-Write-with-append-content. Never overwrite the whole file.
 
-9. **Schema-correct entity_type values (NON-NEGOTIABLE).** SQLite `entity_type` column MUST exactly match the `entity_type` field in the corresponding schema YAML at `<vault_root>/_shared/entity-schemas/<entity_type>.yaml`. Use kebab-case schema names: `person`, `project`, `publication`, `citation`, `public-presence`, `media-mention`, `speaking-engagement`, `award-received`, `cbh-hosted-event`, `cbh-sponsored-award`, `patent`, `content-asset`. NEVER use shortened forms (`award` instead of `award-received`), underscores (`media_mention` instead of `media-mention`), or invented variations (`org_channel` instead of `public-presence`). Real bug: Stage 2 vs Stage 4 mismatch in CBH Phase 1 caused 6 distinct values to appear for what should have been 4 entity types; required manual SQLite normalization. Lookup the schema entity_type field BEFORE persisting any record; use that value verbatim.
+9. **Schema-correct entity_type values (NON-NEGOTIABLE).** SQLite `entity_type` column MUST exactly match the `entity_type` field in the corresponding schema YAML at `<vault_root>/_shared/entity-schemas/<entity_type>.yaml`. Use kebab-case schema names: `person`, `project`, `publication`, `citation`, `public-presence`, `media-mention`, `amplification` (added 2026-05-07), `speaking-engagement`, `award-received`, `cbh-hosted-event`, `cbh-sponsored-award`, `patent`, `content-asset`. NEVER use shortened forms (`award` instead of `award-received`), underscores (`media_mention` instead of `media-mention`), or invented variations (`org_channel` instead of `public-presence`). Real bug: Stage 2 vs Stage 4 mismatch in CBH Phase 1 caused 6 distinct values to appear for what should have been 4 entity types; required manual SQLite normalization. Lookup the schema entity_type field BEFORE persisting any record; use that value verbatim.
+
+10. **One file per entity. Reject roll-ups and lists.** (added 2026-05-07; today's NEW finding #13). When persisting a batch, every record in `batch[]` must be intended as ONE file. REJECT batches where:
+    - A single intended-record's `fields` contains a top-level `publications: [...]` (or any `<plural-kind>: [list]`) nested list. This is the roll-up antipattern.
+    - The batch was framed as "list of records" but actually contains a single record whose body lists 10 records.
+    - On reject: emit a `validator-flags.json` event of class `roll-up-detected` with the offending record slug + intended path; return status=failed with explicit error; require the caller to dispatch one record per file.
+    Two CBH agents on 2026-05-07 (Robertson, Ling) violated this — Robertson wrote 10 expansion publications as a single rollup-with-nested-list file, Ling as a bare-list file. Downstream `find <kind>/ -name '*.json' | wc -l` undercounts list-style files; analytics silently mis-count.
+
+11. **persist_batch must validate frontmatter back-pressure** (added 2026-05-07; audit finding #15). After Build YAML frontmatter (step 3 below), parse the about-to-be-written frontmatter through PyYAML and assert: (a) for `entity_type=publication`, `authors` is a list (NOT a comma-separated string); (b) for `entity_type=person`, `canonical_name` is present (NOT `title`); (c) all enum-typed fields match exactly the values in the schema YAML. Reject and re-raise on any mismatch. Do NOT silently coerce.
 
 ## Purpose
 
@@ -162,7 +170,7 @@ For each record in `batch`:
 
 4. **Write tool: create entity record markdown file.**
    - Path: `<vault_root>/<entity_type_folder>/<slug>.md`
-   - Folder mapping: person -> people/, project -> projects/, publication -> publications/, citation -> citations/, public-presence -> public-presence/, media-mention -> media-mentions/, speaking-engagement -> speaking-engagements/, award-received -> awards-received/, cbh-hosted-event -> events/, cbh-sponsored-award -> awards-given/, patent -> patents/, content-asset -> (no separate file; tracked only in SQLite)
+   - Folder mapping: person -> people/, project -> projects/, publication -> publications/, citation -> citations/, public-presence -> public-presence/, media-mention -> media-mentions/, **amplification -> amplifications/** (added 2026-05-07; audit finding #4), speaking-engagement -> speaking-engagements/, award-received -> awards-received/, cbh-hosted-event -> events/, cbh-sponsored-award -> awards-given/, patent -> patents/, content-asset -> (no separate file; tracked only in SQLite). Books are persisted under `books/` (already in use; ensure books/ JSONs are in the RAG corpus glob — see op=finalize_run note added 2026-05-07; today's NEW finding #14).
    - Content: YAML frontmatter then body section with summary or full content as appropriate
 
 5. **Bash tool: insert SQLite row**
@@ -271,6 +279,43 @@ After all validations:
 2. **For each file:** Read frontmatter, parse, INSERT OR REPLACE into SQLite
 3. **Return** counts.
 
+### op=verify_assets_have_backpointers (added 2026-05-07; audit findings #1, #15)
+
+**Purpose:** Mirror of op=resync_from_vault but in the asset->parent direction. Walks every binary cached under `<vault_root>/_assets/` and asserts that some parent entity JSON has a back-pointer (pdf_local_path / transcript_local_path / html_local_path / audio_local_path) to it. Run at end of Stage 7 (Asset processing) and as part of op=finalize_run.
+
+**Why:** On 2026-05-07 audit, Phase A claimed 16 backfilled `pdf_local_path` writes; on-disk verification found 0. Root cause: schema didn't have the field, Write tool calls silently succeeded but persisted no actual data. The schema fix (publication.yaml et al.) addresses the cause; this op is the validator that catches future regressions.
+
+**Required tool calls:**
+
+1. **Bash find** all assets:
+   ```bash
+   find '<vault_root>/_assets/' -type f \
+     \( -name '*.pdf' -o -name '*.html' -o -name '*.md' -o -name '*.mp3' -o -name '*.mp4' -o -name '*.m4a' \) \
+     ! -path '*.tmp'
+   ```
+
+2. **For each asset path**, search entity JSONs for any with one of `pdf_local_path`, `transcript_local_path`, `html_local_path`, `audio_local_path` matching the relative path:
+   ```bash
+   REL=${asset#${vault_root}/}
+   grep -l "\"$REL\"" '<vault_root>'/{publications,media-mentions,amplifications,speaking-engagements,awards-received,patents,events}/*.json 2>/dev/null
+   ```
+
+3. **For each asset with NO parent back-pointer:** append to `<state_root>/_state/validator-flags.json` under class `asset-without-backpointer` with `{asset_path, scanned_at, recommended_action: "manually attach to parent entity"}`.
+
+4. **Return:**
+   ```yaml
+   op: verify_assets_have_backpointers
+   status: success | partial | failed
+   summary:
+     assets_scanned: <int>
+     assets_with_backpointer: <int>
+     orphaned_assets: <int>
+     orphaned_paths: [list]
+   errors: []
+   ```
+
+5. **Fail-loud rule:** if `orphaned_assets > 0`, the orchestrator should treat the run as `partial` until reconciled. Emit `hallucination_detected` event class `back-pointer-gap` with the count.
+
 ### op=validate_cbh_association
 
 **Purpose:** Audit Person records for missing or incomplete `cbh_association` blocks. Used in Phase 2 pre-flight.
@@ -292,11 +337,14 @@ After all validations:
 **Required tool calls:**
 
 1. **Bash tool:** count entities per type from SQLite, count ContentAssets, count transcripts.
-2. **Agent tool:** dispatch HFO memory-management department for RAG ingest
+2. **Run op=verify_assets_have_backpointers** (added 2026-05-07; non-skippable). If orphaned_assets > 0, mark this finalize as `partial` and emit a validator flag. Do not let a run claim success while assets exist on disk without back-pointers.
+3. **Agent tool:** dispatch HFO memory-management department for RAG ingest
    - subagent_type: "memory-management"
    - prompt: "rag_ingest config_path=<rag_config_path>. Use the existing ~/Winnie/rag/ingest.py pattern with the provided config. Return ingest summary."
-3. **Bash tool:** append finalize event to run-log.jsonl
-4. **Return:** summary stats including counts, RAG ingest status, run-log tail.
+   - **RAG corpus glob MUST include all entity-kind dirs.** Verify the config patterns include: `publications/*.json`, `media-mentions/*.json`, `amplifications/*.json` (added 2026-05-07; audit finding #4), `speaking-engagements/*.json`, `awards-received/*.json`, `patents/*.json`, `events/*.json`, `people/*.json`, `projects/*.json`, **`books/*.json`** (added 2026-05-07; today's NEW finding #14 — books/ was previously missing from globs and silently excluded from RAG), `citations/*.json`, `_assets/transcripts/*.md`. If the rag_config_path doesn't include these patterns, fail loud — don't ingest a partial corpus and call success.
+4. **Smoke test (NON-SKIPPABLE; audit finding #9).** After ingest, dispatch one `mcp__cbh_rag__rag_search` (or equivalent for the per-client RAG store) for a query that should hit one of the entities created/modified in this run (e.g., the title of a freshly-persisted publication). If 0 hits: ingest didn't take. Return status=failed even though prior steps succeeded; stale RAG = silently broken deliverable.
+5. **Bash tool:** append finalize event to run-log.jsonl with `assets_orphaned`, `rag_ingest_status`, `rag_smoke_test_passed`.
+6. **Return:** summary stats including counts, RAG ingest status, smoke-test result, run-log tail.
 
 ## Constraints
 

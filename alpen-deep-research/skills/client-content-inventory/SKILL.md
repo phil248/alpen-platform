@@ -23,6 +23,10 @@ description: "Comprehensive client content inventory workflow. USE THIS SKILL wh
 
 7. **Return failure honestly.** If a stage fails, return `status: failed` with the failed stage and error. Do not fabricate completion of stages that hit issues.
 
+8. **One file per entity. Never roll-ups, never lists.** (added 2026-05-07; audit findings #13 NEW). Each publication, media-mention, amplification, speaking-engagement, award-received, etc. MUST be persisted as its OWN JSON file under the kebab-case directory for its kind (e.g., `publications/<slug>.json`, `amplifications/<slug>.json`). Never write a single file containing a list of publications, never write a roll-up file with `publications: [...]` nested inside. Two CBH agents violated this on 2026-05-07 (Robertson wrote 10 expansion publications as one rollup-with-nested-list; Ling wrote them as a single bare-list file) — downstream analytics expects per-record files and silently mis-counts when given lists. memory-orchestration op=persist_batch must reject any batch where a single intended-record file contains a top-level list of records. If you receive a subagent summary suggesting list-style persistence, halt and re-dispatch.
+
+9. **Dashboards MUST be computed from disk + SQLite, never from prior agent claims.** (added 2026-05-07; audit finding #2). Phase D dashboards on 2026-05-07 had every entity-type count wrong (publications 234 vs disk 236, media-mentions 23 vs 45, speaking-engagements 0 vs 16, "117.6% ORCID coverage" computed from synthesized counts). Do NOT generate the final dashboard via LLM narrative synthesis. Stage 10 dispatches `content-analysis op=build_verified_dashboard` which runs a deterministic Python script that reads `find . -name '*.json'` per entity-type folder and queries SQLite for canonical counts. Free-text dashboard counts from agent narratives are an antipattern.
+
 ## Purpose
 
 Orchestrate the complete inventory pipeline for a client. Read parameters, dispatch subagents in sequence, persist state at every step, produce the snapshot deliverable.
@@ -61,6 +65,10 @@ delivery:
 phase: 1 | 2 | 3 | 4 | 5
 run_stage: int | "all"
 op: string | null
+
+# Added 2026-05-07 (audit finding #14):
+dependency_policy: hard-fail | soft-fail   # default: hard-fail for production runs
+verify_from_disk: bool                     # default: true; Stage 10 dashboards always disk-verified
 ```
 
 ## Pipeline (Phase 1 sequence)
@@ -89,6 +97,25 @@ Stage 3: Per-person publication discovery
     - Dispatch persist
     - If next_batch_offset is null, person done; move to next person
   - Verify: SQLite COUNT(*) WHERE entity_type='publication'
+
+Stage 3.5: ORCID truth-check (NON-SKIPPABLE invariant; added 2026-05-07; audit finding #3)
+  - For each person in seed_people with an `orcid_id`:
+    - Bash: curl -s "https://pub.orcid.org/v3.0/<orcid>/works" -H "Accept: application/json"
+            | jq '.group | length'
+      Captures ORCID's authoritative count of distinct works.
+    - SQLite: SELECT COUNT(*) FROM entities WHERE entity_type='publication'
+              AND json_extract(blob, '$.authors') LIKE '%<person_slug>%'
+    - Compute delta_pct = (orcid_count - inventory_count) / orcid_count
+    - If delta_pct > 0.05 (inventory < ORCID by more than 5%):
+        - Mark run.verifications.orcid_truth_check[<person>] = "FAIL: <inv>/<orcid>"
+        - REFUSE to proceed past this stage unless caller passes
+          paths.dependency_policy=soft-fail OR an explicit override flag.
+        - When refused: emit hfo-log heartbeat with current_activity describing
+          the gap, return status=partial with current_stage=3.5, do NOT advance.
+    - If delta_pct <= 0.05: log "OK: <inv>/<orcid>" and advance.
+  - This is the root cause of CBH Phase 1 missing 22 of Sandra's >250-cite papers
+    (including her single most-cited at 676 citations). Failing loud here is the
+    point — silent under-discovery is the bug being prevented.
 
 Stage 4: Per-person non-publication discovery
   - For each person in seed_people:
@@ -124,12 +151,30 @@ Stage 8: Entity resolution + analytics
   - Dispatch content-analysis with op=compute_distributions
   - Verify: ls '<vault_root>/_analytics/' has all expected CSV/JSON files
 
-Stage 9: Finalize and trigger RAG ingest
+Stage 9: Finalize and trigger RAG ingest (NON-SKIPPABLE; audit finding #9)
+  - This stage is non-skippable, even on resumed runs and on Phase 2/3/4 invocations.
+    Each phase's writes must flow into RAG before the run can claim success.
   - Dispatch memory-orchestration with op=finalize_run
-  - Receive: summary stats, RAG ingest status
-  - Verify: Bash ls -la '<rag_store_path>' shows substantial size after ingest
+  - memory-orchestration triggers the RAG ingest (mcp__cbh_rag__rag_ingest equivalent
+    or rag CLI) over all entities created/modified during this run.
+  - Smoke test (REQUIRED): pick one entity slug created during this run, dispatch
+    a sample mcp__cbh_rag__rag_search for its title or canonical phrase. If 0 hits,
+    the ingest didn't take — fail the run with status=failed even though prior
+    stages succeeded. Stale RAG = silently broken deliverable.
+  - Verify: Bash ls -la '<rag_store_path>' shows substantial size after ingest.
 
-Stage 10: Generate snapshot deliverable (Phase 4 work; in MVP, stub this)
+Stage 10: Generate verified-from-disk dashboard (audit finding #2)
+  - Dispatch content-analysis with op=build_verified_dashboard.
+    That op runs a deterministic Python script (lib/build_dashboard.py) that:
+      * counts entity JSONs by directory (`find <vault>/<kind>/ -name '*.json' | wc -l`)
+      * counts chunks in RAG SQLite by source_kind
+      * computes ORCID-vs-inventory delta per seed person (re-runs the Stage 3.5 check)
+      * outputs `_deliverable/<date>-verified-dashboard.md` with disk-anchored counts
+  - LLM-written dashboards are FORBIDDEN at this stage. The orchestrator's job here
+    is dispatch + verification, not synthesis. If you find yourself drafting count
+    prose, stop — the script is the source of truth.
+  - Verify: file exists at `_deliverable/<date>-verified-dashboard.md` and counts
+    match `find` output for each kind directory.
 ```
 
 ## Phase 1 MVP scope (CBH)
@@ -268,7 +313,7 @@ When a Phase / stage / full pipeline run completes (ok, partial, paused, or fail
   --entity ccg \
   --status <ok|partial|paused|failed> \
   --correlation-id "<run_id>" \
-  --metrics '{"client_slug": "<slug>", "phase": <1-5>, "current_stage": <1-10>, "run_id": "<run_id>", "stages_completed": [<list>], "entities_persisted_total": <int>, "entities_by_type": {"person": <int>, "publication": <int>, "project": <int>, "media-mention": <int>, "speaking-engagement": <int>, "award-received": <int>, "event": <int>, "award-given": <int>, "patent": <int>, "public-presence": <int>, "citation": <int>, "content-asset": <int>}, "assets_acquired": <int>, "transcripts_generated": <int>, "citations_indexed": <int>, "total_runtime_minutes": <int>, "tokens_estimated": <int>, "budget_hits": <int>}'
+  --metrics '{"client_slug": "<slug>", "phase": <1-5>, "current_stage": <1-10>, "run_id": "<run_id>", "stages_completed": [<list>], "entities_persisted_total": <int>, "entities_by_type": {"person": <int>, "publication": <int>, "project": <int>, "media-mention": <int>, "amplification": <int>, "speaking-engagement": <int>, "award-received": <int>, "event": <int>, "award-given": <int>, "patent": <int>, "public-presence": <int>, "citation": <int>, "content-asset": <int>}, "assets_acquired": <int>, "transcripts_generated": <int>, "citations_indexed": <int>, "total_runtime_minutes": <int>, "tokens_estimated": <int>, "budget_hits": <int>}'
 ```
 
 The `correlation_id` must equal the `run_id` so all subagent events from this run cluster together in the viz Chains tab. The 5 subagents (memory-orchestration, content-research, content-acquisition, content-processing, content-analysis) all emit `skill_completed` with the same `--correlation-id "<run_id>"`, producing a multi-touch chain visible in the viz.

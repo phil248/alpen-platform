@@ -22,7 +22,7 @@ description: >
 
 ## CRITICAL RULES (NON-NEGOTIABLE)
 
-1. **Every claim of download MUST be backed by an actual file on disk.** After every download attempt, verify the file exists at the expected path with non-zero bytes via Bash `ls -la` or `stat`. Do not return `download_status: completed` for files you did not actually fetch.
+1. **Every claim of download MUST be backed by an actual file on disk WITH FORMAT-CORRECT MAGIC BYTES.** (tightened 2026-05-07; audit finding #8). After every download attempt, verify the file exists at the expected path with non-zero bytes AND verify its magic bytes match the declared format. For PDFs: `file '<path>' | grep -q 'PDF document'` OR `head -c 4 '<path>' | grep -q '^%PDF'`. On 2026-05-07 audit, 8 of 10 "downloaded" PDFs in Phase A were actually HTML login pages renamed `.pdf` — content-acquisition never magic-byte-checked, downstream content-processing then tried to extract text and silently produced garbage. If magic bytes do not match: set `download_status: failed-content-mismatch`, write the html-as-pdf to `_assets/html/<slug>.html` for downstream HTML extraction, and re-attempt the original target at Tier 2. Never declare a PDF download successful when the file is HTML.
 
 2. **Use real fetch tools.** HTTP downloads MUST use Bash with `curl` or `wget` (or `yt-dlp` for audio/video). Tier 2 escalation MUST use `mcp__plugin_playwright_playwright__browser_navigate` plus `browser_snapshot`. Do not narrate downloads.
 
@@ -51,7 +51,23 @@ For each URL:
 ```bash
 # For documents/images:
 curl -L -o '<vault_root>/_assets/<format>/<slug>.<ext>.tmp' '<url>'
+# Magic-byte validator BEFORE the mv (added 2026-05-07; audit finding #8):
+if [[ "<format>" == "pdf" ]]; then
+  if ! file '<vault_root>/_assets/<format>/<slug>.<ext>.tmp' | grep -q 'PDF document'; then
+    # Not a real PDF — preserve as html-as-pdf for downstream HTML extraction,
+    # mark download_status=failed-content-mismatch, escalate to Tier 2.
+    mv '<vault_root>/_assets/<format>/<slug>.<ext>.tmp' '<vault_root>/_assets/html/<slug>.html'
+    echo 'PDF magic bytes missing; preserved as HTML; escalating to Tier 2'
+    # ... Tier 2 retry path here
+  fi
+fi
 mv '<vault_root>/_assets/<format>/<slug>.<ext>.tmp' '<vault_root>/_assets/<format>/<slug>.<ext>'
+
+# OA fallback (added 2026-05-07; audit finding #7): if the primary url returns
+# paywalled or blocked-by-auth content AND the parent publication record has a
+# non-empty `secondary_urls` (populated upstream from OpenAlex open_access.oa_url),
+# automatically retry against secondary_urls[0] before declaring blocked-by-paywall.
+# OpenAlex OA mirrors recovered 17 PDFs missed by Phase 1 publisher URLs.
 
 # For audio/video:
 /opt/homebrew/bin/yt-dlp -o '<vault_root>/_assets/audio/<slug>.%(ext)s' '<url>'
